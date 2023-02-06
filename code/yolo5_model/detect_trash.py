@@ -30,7 +30,7 @@ boxes = []
 while success:
     success,img = vidcap.read()
     prediction = model(img)    
-    print(prediction.pandas().xyxy[0])\+
+    print(prediction.pandas().xyxy[0])
     
     for row in prediction.pandas().xyxy[0].itertuples():
         if row.confidence > 0.45 and row.ymin > 514 and row.ymax > 514:
