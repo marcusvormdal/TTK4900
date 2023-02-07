@@ -34,9 +34,8 @@ print('Amount of frames:', np.shape(lidar_data))
 print('Data points in frame 0:', np.shape(lidar_data[0]))
 
 lidar_generator = clean_data(lidar_data, radius = 10, intensity=1, heigth=-0.65, start_frame = 3020)
-fig, ax = plt.subplots(1,3)
+fig, ax = plt.subplots(1,2)
 detector = cv2.createLineSegmentDetector(0)
-
 
 for i in range(np.shape(lidar_data)[0]):
 
@@ -54,9 +53,7 @@ for i in range(np.shape(lidar_data)[0]):
     
     print('Thresholded data points in frame ' +str(i)+  ':',np.shape(thresholded_lidar_data))
     if thresholded_lidar_data.size :
-        #ax[0].scatter(thresholded_lidar_data[:,0], thresholded_lidar_data[:,1], 
-        #              marker='o', color='blue')
-        print(thresholded_lidar_data)
+
         lidar_image = lidar_to_image(thresholded_lidar_data)
         img_lines = np.zeros((100, 100), dtype=np.uint8)
 
@@ -69,17 +66,16 @@ for i in range(np.shape(lidar_data)[0]):
         relative_lines = get_relative_pos(lines, 'line')
         for line in relative_lines:
             ax[0].plot(line[0], line[1], color="red", linewidth=3)
-            
-        img_3 = lidar_to_image(points)
-        ax[2].imshow(img_3)
+
         ax[1].imshow(img_lines)
+
         ax[0].scatter(thresholded_lidar_data[:,0], thresholded_lidar_data[:,1], 
-                         marker='o', color='red')
+                         marker='x', color='red')
         if np.size(points) != 0:
             ax[0].scatter(points[:,0], points[:,1], 
                          marker='o', color='blue')
-    plt.pause(0.1)
-    plt.pause(0.)
+    plt.pause(0.05)
+    #plt.pause(0.)
 
     ax[0].clear()
     ax[1].clear()
