@@ -12,7 +12,8 @@ def get_relative_pos(object, obj_t = 'point', centered = False):
     
     elif obj_t == 'line':
         relative_lines = []
-
+        if object[0] == None:
+            return []
         for line in object[0]:
             x0 = (line[0][0] / 5)- 10
             y0 = (line[0][1] / 5)- 10
@@ -37,3 +38,9 @@ def get_position():
 def get_orientation():
     
     return(0,0,0)
+
+
+def update_orientation(new_orientation, element):
+    
+    # T @ v
+    return

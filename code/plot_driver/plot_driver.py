@@ -30,19 +30,19 @@ def full_plotter(ax, detector,  raw_lidar_data, lidar_measurements, lidar_bounds
     ax[1][1].clear()
 
 def image_plot(ax, detector, lidar_bounds):
-    
-    if lidar_bounds:
-        img_lines = np.zeros((100, 100), dtype=np.uint8)
-        img_lines = detector.drawSegments(img_lines, lidar_bounds[0])
-        ax.imshow(img_lines)
-
+    print(lidar_bounds)
+    if lidar_bounds[0][1] != None:
+        if np.size(lidar_bounds)!= 0:
+            img_lines = np.zeros((100, 100), dtype=np.uint8)
+            img_lines = detector.drawSegments(img_lines, lidar_bounds[:,1][0])
+            ax.imshow(img_lines)
 
 def relative_plot(ax, raw_lidar_data, lidar_measurements, line_segments):
     
     relative_lines = []
     
     if np.size(line_segments) != 0:
-        relative_lines = get_relative_pos(line_segments, 'line')
+        relative_lines = get_relative_pos(line_segments[:,1], 'line')
     
     for line in relative_lines:
         ax.plot(line[0], line[1], color="green", linewidth=3)

@@ -29,8 +29,9 @@ def main():
     
     # Initiate LSD
     detector = cv2.createLineSegmentDetector(0)
-
-    
+    orientation = []
+    current_lines = []
+    old_orientation = []
     # If using captured data
     if use_capture == True:
         # Create generator for raw lidar data
@@ -48,18 +49,20 @@ def main():
         lidar_frame  =  next(lidar_frame_generator)    # All lidar data points at current timestep
         camera_frame =  next(image_generator)          # Image at current timestep
         position     =  sf.get_position()                 # Current position (x,y,z)
+        old_orientation = orientation
         orientation  =  sf.get_orientation()              # Current orientation
-        
+        orientation_delta = orientation #- old_orientation
         print('Frame: ', i)
         if np.size(lidar_frame) != 0:
-            lidar_measurements, lidar_bounds, thresholded_raw  = ld.get_lidar_measurements(detector, lidar_frame, radius = 10, intensity=0, heigth=-0.25)         # All lidar points on the water surface, bounds for plotting
+            lidar_measurements, current_lines, thresholded_raw  = ld.get_lidar_measurements(detector, lidar_frame, radius = 10, intensity=0, heigth=-0.25, current_lines=current_lines, orientation_delta=orientation_delta)         # All lidar points on the water surface, bounds for plotting
         
         #camera_measurements, camera_bounds = cd.get_camera_measurements(camera_frame)       # Extracted points of objects, bounds for plotting
         #measurements = np.concatenate([lidar_measurements, camera_measurements], axis = 0)  # Treat equally? Might want to weigh differently
         
         #tracks = jd.JPDA(start_time, tracks, measurements)
-        camera_bounds = []
-        #pd.full_plotter(ax, detector, thresholded_raw, lidar_measurements, lidar_bounds, camera_bounds, camera_frame) 
+        
+        #camera_bounds = []
+        pd.full_plotter(ax, detector, thresholded_raw, lidar_measurements, current_lines, camera_bounds = [], camera_frame=camera_frame) 
     
 main()
     

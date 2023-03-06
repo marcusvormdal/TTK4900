@@ -29,6 +29,7 @@ def get_image_measurements():
     
     return None
 
+
 def calculate_angle(bbox):
     """Assumes plane on water level"""
     image_centre =(1344, 760)

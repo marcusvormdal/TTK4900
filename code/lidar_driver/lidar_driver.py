@@ -17,7 +17,7 @@ def get_raw_lidar_data(raw_lidar_data, start_frame):
     for frame in raw_lidar_data[start_frame:]:
         yield frame
         
-def get_lidar_measurements(detector, lidar_data, radius, intensity, heigth, ):
+def get_lidar_measurements(detector, lidar_data, radius, intensity, heigth, current_lines, orientation_delta):
     frame_points = []
     unique_points = np.unique(lidar_data, axis=0)    
     
@@ -33,7 +33,8 @@ def get_lidar_measurements(detector, lidar_data, radius, intensity, heigth, ):
         lidar_image = lidar_to_image(frame_points)
         lidar_image = cv2.GaussianBlur(lidar_image,(3,3),0)
         lines = detector.detect(lidar_image)
-        lidar_measurements = clean_on_line_intersect(lines[0], frame_points)
+        lines = update_lines(lines, current_lines, orientation_delta)
+        lidar_measurements = clean_on_line_intersect(lines[:,1][0], frame_points)
     
     return lidar_measurements, lines, frame_points
 
@@ -50,10 +51,11 @@ def lidar_to_image(lidar_points, height = 100, width = 100):
 
 
 def clean_on_line_intersect(lines, lidar_points):
+    if lines == None:
+        return lidar_points
     cleaned_points = []
     x = get_image_pos(lidar_points[:,0])
     y = get_image_pos(lidar_points[:,1])
-
     for i in range(np.size(x)):
         intersect = False
         y1, x1, y2, x2 = 50,50, x[i], y[i]
@@ -75,9 +77,31 @@ def clean_on_line_intersect(lines, lidar_points):
            cleaned_points.append(lidar_points[i])
     
     return np.array(cleaned_points)
+    
+def update_lines(lines, current_lines, new_orientation):
+    current_lines = list(current_lines)
+    current_lines = remove_outdated_lines(current_lines, new_orientation)
+ 
+    for l in lines:
+        l = scale_lines(l)
+        print(current_lines)
+        if current_lines == None:
+            current_lines = [[0,l]]
+        else:
+            current_lines = current_lines.append([0, l])
+                
+    return np.array(current_lines)
+    
+def scale_lines(line):
+    scaled_line = line
+    return scaled_line
 
-def pad_line(x1, y1, x2, y2):
-
-
-    return x1, y1, x2, y2 
-
+def remove_outdated_lines(lines, new_orientation):
+    updated_lines = []
+    for l in lines:
+        if l[0] != 3:
+            l[0] += 1
+            #lines[1] = increment_orientation(lines[1], new_orientation)
+            updated_lines = updated_lines.append(l)
+            
+    return updated_lines
