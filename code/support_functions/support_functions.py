@@ -1,7 +1,6 @@
 import numpy as np
 
 def get_relative_pos(object, obj_t = 'point', centered = False):
-
     if obj_t == 'point':
         if np.size(object) == 0:
             return np.array([])
@@ -12,13 +11,13 @@ def get_relative_pos(object, obj_t = 'point', centered = False):
     
     elif obj_t == 'line':
         relative_lines = []
-        if object[0] == None:
+        if np.size(object) == 0:
             return []
-        for line in object[0]:
-            x0 = (line[0][0] / 5)- 10
-            y0 = (line[0][1] / 5)- 10
-            x1 = (line[0][2] / 5)- 10
-            y1 = (line[0][3] / 5) -10
+        for line in object:
+            x0 = (line[0] / 5)- 10
+            y0 = (line[1] / 5)- 10
+            x1 = (line[2] / 5)- 10
+            y1 = (line[3] / 5) -10
             rel_line = [(y0, y1),(x0, x1)]
 
             relative_lines.append(rel_line)           

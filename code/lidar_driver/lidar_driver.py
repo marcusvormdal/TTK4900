@@ -3,7 +3,6 @@ import velodyne_decoder as vd
 import cv2
 from PIL import Image as im
 from support_functions.support_functions import get_image_pos
-
 def read_pcap_data(filepath):
     config = vd.Config(model='VLP-16', rpm=600)
     cloud_arrays = []
@@ -28,15 +27,17 @@ def get_lidar_measurements(detector, lidar_data, radius, intensity, heigth, curr
     frame_points = np.array(frame_points)
     
     lines = []
+    new_lines = []
     lidar_measurements = []
     if np.size(frame_points) != 0:
         lidar_image = lidar_to_image(frame_points)
+        cv2.imshow('converted', lidar_image)
         lidar_image = cv2.GaussianBlur(lidar_image,(3,3),0)
-        lines = detector.detect(lidar_image)
-        lines = update_lines(lines, current_lines, orientation_delta)
-        lidar_measurements = clean_on_line_intersect(lines[:,1][0], frame_points)
-    
-    return lidar_measurements, lines, frame_points
+        new_lines = detector.detect(lidar_image)
+        lines = update_lines(new_lines, current_lines, orientation_delta)
+        lidar_measurements = clean_on_line_intersect(lines, frame_points)
+            
+    return lidar_measurements, lines, frame_points, new_lines
 
 
 def lidar_to_image(lidar_points, height = 100, width = 100):   
@@ -51,8 +52,8 @@ def lidar_to_image(lidar_points, height = 100, width = 100):
 
 
 def clean_on_line_intersect(lines, lidar_points):
-    if lines == None:
-        return lidar_points
+    lines = lines[:,1]
+
     cleaned_points = []
     x = get_image_pos(lidar_points[:,0])
     y = get_image_pos(lidar_points[:,1])
@@ -61,15 +62,25 @@ def clean_on_line_intersect(lines, lidar_points):
         y1, x1, y2, x2 = 50,50, x[i], y[i]
         
         for l in lines:
-            x3, y3, x4, y4 = np.floor(l[0][0]), np.floor(l[0][1]), np.floor(l[0][2]), np.floor(l[0][3])
-            #x3, y3, x4, y4 = pad_line(np.floor(l[0][0]), np.floor(l[0][1]), np.floor(l[0][2]), np.floor(l[0][3]))
+            x3, y3, x4, y4 = np.floor(l[0]), np.floor(l[1]), np.floor(l[2]), np.floor(l[3])
 
             t_num = (x1-x3)*(y3-y4)-(y1-y3)*(x3-x4)
             t_den = (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4)
             u_num = (x1-x3)*(y1-y2)-(y1-y3)*(x1-x2)
             u_den = (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4)
+            if u_den == 0 or t_den == 0:
+                continue
             t = t_num / t_den
             u = u_num /u_den
+            if t >= 0.5:
+                t = t - 0.2
+            else:
+                t = t + 0.2
+            if u >= 0.5:
+                u = u - 0.2
+            else:
+                u = u + 0.2
+            
             if (0 <= t <= 1) and (0 <= u <= 1):
                 intersect = True
                 
@@ -79,22 +90,19 @@ def clean_on_line_intersect(lines, lidar_points):
     return np.array(cleaned_points)
     
 def update_lines(lines, current_lines, new_orientation):
+    
     current_lines = list(current_lines)
     current_lines = remove_outdated_lines(current_lines, new_orientation)
- 
-    for l in lines:
-        l = scale_lines(l)
-        print(current_lines)
-        if current_lines == None:
-            current_lines = [[0,l]]
-        else:
-            current_lines = current_lines.append([0, l])
-                
-    return np.array(current_lines)
     
-def scale_lines(line):
-    scaled_line = line
-    return scaled_line
+    if np.size(lines) > 0:
+        for l in lines[0]:
+
+            if np.size(current_lines) == 0:
+                current_lines = [[0,l[0]]]
+            else:
+                current_lines.append([0, l[0]])
+
+    return np.array(current_lines, dtype=object)
 
 def remove_outdated_lines(lines, new_orientation):
     updated_lines = []
@@ -102,6 +110,6 @@ def remove_outdated_lines(lines, new_orientation):
         if l[0] != 3:
             l[0] += 1
             #lines[1] = increment_orientation(lines[1], new_orientation)
-            updated_lines = updated_lines.append(l)
-            
+            updated_lines.append(l)
+
     return updated_lines

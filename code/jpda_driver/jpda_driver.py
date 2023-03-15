@@ -7,7 +7,6 @@ from stonesoup.models.measurement.linear import LinearGaussian
 from stonesoup.predictor.kalman import KalmanPredictor
 from stonesoup.updater.kalman import KalmanUpdater
 from stonesoup.hypothesiser.probability import PDAHypothesiser
-
 from stonesoup.types.array import StateVectors
 from stonesoup.functions import gm_reduce_single
 from stonesoup.types.update import GaussianStateUpdate
