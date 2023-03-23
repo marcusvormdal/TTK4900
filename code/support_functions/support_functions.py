@@ -61,3 +61,20 @@ def update_position(position_delta, element):
     new_elem = R @ np.array([element[0], element[1], 0]) - position_delta[1:3]
     
     return new_elem[0:2]
+
+def data_handler(curr_lidar, curr_cam, curr_pos, gen_lidar, gen_cam, gen_pos):
+    data_type = ''
+    data = None
+    if curr_lidar.t <curr_cam.t and curr_lidar.t <curr_pos.t:
+        data_type = 'lidar'
+        data = curr_lidar
+        curr_lidar = next(gen_pos)
+    if curr_cam.t <curr_lidar.t and curr_cam.t <curr_pos.t:
+        data_type = 'cam'
+        data = curr_cam
+        curr_cam = next(gen_lidar)
+    else:
+        data_type = 'pos'
+        data = curr_pos
+        curr_pos = next(gen_cam)
+    return data_type, data, curr_lidar, curr_cam, curr_pos

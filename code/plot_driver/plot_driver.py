@@ -44,10 +44,11 @@ def track_plot(ax, pos_track):
     ax.plot(x, y, color='green', marker='o', linestyle='dashed', linewidth=1, markersize=1)
          
 def image_plot(ax, detector, lidar_bounds):
-    if np.size(lidar_bounds)!= 0:
-        img_lines = np.zeros((100, 100), dtype=np.uint8)
-        img_lines = detector.drawSegments(img_lines, lidar_bounds[0])
-        ax.imshow(img_lines)
+    if np.size(lidar_bounds)!= 0 :
+        if lidar_bounds[0] != None:
+            img_lines = np.zeros((100, 100), dtype=np.uint8)
+            img_lines = detector.drawSegments(img_lines, lidar_bounds[0])
+            ax.imshow(img_lines)
 
 def relative_plot(ax, raw_lidar_data, lidar_measurements, line_segments):
     

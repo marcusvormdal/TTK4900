@@ -17,6 +17,8 @@ def get_raw_lidar_data(raw_lidar_data, start_frame):
         yield frame
         
 def get_lidar_measurements(detector, lidar_data, position_delta, radius, intensity, heigth, current_lines):
+    if np.size(lidar_data) == 0:
+        return None, None, None, None
     frame_points = []
     unique_points = np.unique(lidar_data, axis=0)    
     
@@ -52,6 +54,9 @@ def lidar_to_image(lidar_points, height = 100, width = 100):
 
 
 def clean_on_line_intersect(lines, lidar_points):
+    if np.size(lines) == 0:
+        return lidar_points
+
     lines = lines[:,1]
 
     cleaned_points = []
@@ -95,7 +100,7 @@ def update_lines(lines, current_lines, position_delta):
     current_lines = list(current_lines)
     current_lines = remove_outdated_lines(current_lines)
     
-    if np.size(lines) > 0:
+    if np.size(lines) > 0 and lines[0] != None:
         for l in lines[0]:
             if np.size(current_lines) == 0:
                 current_lines = [[0,l[0]]]
