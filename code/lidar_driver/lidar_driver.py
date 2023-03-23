@@ -16,7 +16,7 @@ def get_raw_lidar_data(raw_lidar_data, start_frame):
     for frame in raw_lidar_data[start_frame:]:
         yield frame
         
-def get_lidar_measurements(detector, lidar_data, radius, intensity, heigth, current_lines, orientation_delta):
+def get_lidar_measurements(detector, lidar_data, position_delta, radius, intensity, heigth, current_lines):
     frame_points = []
     unique_points = np.unique(lidar_data, axis=0)    
     
@@ -31,12 +31,12 @@ def get_lidar_measurements(detector, lidar_data, radius, intensity, heigth, curr
     lidar_measurements = []
     if np.size(frame_points) != 0:
         lidar_image = lidar_to_image(frame_points)
-        cv2.imshow('converted', lidar_image)
+        #cv2.imshow('converted', lidar_image)
         lidar_image = cv2.GaussianBlur(lidar_image,(3,3),0)
         new_lines = detector.detect(lidar_image)
-        lines = update_lines(new_lines, current_lines, orientation_delta)
+        lines = update_lines(new_lines, current_lines, position_delta)
         lidar_measurements = clean_on_line_intersect(lines, frame_points)
-            
+    
     return lidar_measurements, lines, frame_points, new_lines
 
 
@@ -89,14 +89,14 @@ def clean_on_line_intersect(lines, lidar_points):
     
     return np.array(cleaned_points)
     
-def update_lines(lines, current_lines, new_orientation):
+def update_lines(lines, current_lines, position_delta):
     
+    current_lines = update_lines_pos(position_delta, current_lines)
     current_lines = list(current_lines)
-    current_lines = remove_outdated_lines(current_lines, new_orientation)
+    current_lines = remove_outdated_lines(current_lines)
     
     if np.size(lines) > 0:
         for l in lines[0]:
-
             if np.size(current_lines) == 0:
                 current_lines = [[0,l[0]]]
             else:
@@ -104,12 +104,26 @@ def update_lines(lines, current_lines, new_orientation):
 
     return np.array(current_lines, dtype=object)
 
-def remove_outdated_lines(lines, new_orientation):
+def remove_outdated_lines(lines):
     updated_lines = []
     for l in lines:
-        if l[0] != 3:
+        if l[0] != 2:
             l[0] += 1
-            #lines[1] = increment_orientation(lines[1], new_orientation)
             updated_lines.append(l)
+    return updated_lines
 
+def update_lines_pos(position_delta, lines):
+    updated_lines = []
+    R = np.array([[np.cos(-position_delta[3]), -np.sin(-position_delta[3]), 0],
+                [np.sin(-position_delta[3]), np.cos(-position_delta[3]), 0],
+                [0,0,1]])
+    print("delta", position_delta)
+    for l in lines:
+        #print("Before",l)
+        new_line_start = (R @ np.array([l[1][0], l[1][1], 0]))[0:2] - position_delta[1:3]
+        new_line_end = (R @ np.array([l[1][2], l[1][3], 0]))[0:2] - position_delta[1:3]
+        l[1][0], l[1][1] = new_line_start[0], new_line_start[1]
+        l[1][2], l[1][3] = new_line_end[0], new_line_end[1]
+        #print("After",l)
+        updated_lines.append(l)
     return updated_lines

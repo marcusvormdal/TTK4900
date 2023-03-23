@@ -32,7 +32,7 @@ def detect_trash(image, model):
             #print(np.rad2deg(box[0])-90)
     print(detections)
     for b in boxes:
-        world_cord = get_world_coordinate(0,0,0,0.63, b)
+        world_cord = get_world_coordinate(0,-90*np.pi/180,0,0,0,0.63, b)
     
     return detections, boxes
 
@@ -45,15 +45,30 @@ def calculate_angle(bbox):
     return box_data
 
 
-def get_world_coordinate(theta, t1,t2,t3, box_coord):
-    f = 80
+def get_world_coordinate(psi,theta,phi, t1,t2,t3, box_coord):
+    f = 120
     ox = 1344
     oy = 760
     
-    A = np.array([[np.cos(theta) / f , np.sin(theta) / f, (-1/(f*t3))*(np.cos(theta)*f*t1+np.sin(theta)*f*t2 + np.cos(theta)*ox*t3+ np.sin(theta)*oy*t3) ],
-                  [-np.sin(theta) / f , np.cos(theta) / f, (-1/(f*t3))*(np.cos(theta)*f*t2-np.sin(theta)*f*t1 + np.cos(theta)*oy*t3- np.sin(theta)*ox*t3) ],
-                  [0,0,1/t3],])
-    hom_cord = np.array([box_coord[1], box_coord[2], t3])
-    world_cord = A @ hom_cord.T
+    R_z = np.array([[np.cos(psi), -np.sin(psi), 0],
+                  [np.sin(psi), np.cos(psi), 0],
+                  [0,0,1]])
+    R_y = np.array([[np.cos(theta),0, np.sin(theta)],
+                  [0,1,0],
+                  [-np.sin(theta),0, np.cos(theta)]])
+    R_x = np.array([[1,0,0],
+                    [0,np.cos(phi), -np.sin(phi)],
+                    [0,np.sin(phi), np.cos(phi)]])
+    
+    R = np.zeros([3,3])
+    R[:, 0:2] = (R_z@R_y@R_x)[:, 0:2]
+    R[2,0], R[2,1], R[2,2] = t1, t2, t3
+    print(R)
+    
+    i = np.array([[f, 0, ox],[0,f, oy],[0,0,1]])
+    
+    A_in = np.linalg.inv(i @ R)
+    hom_cord = np.array([box_coord[1], box_coord[2], 1])
+    world_cord = A_in @ hom_cord.T
     print("Wcord:",world_cord, np.arctan2(world_cord[1], world_cord[0])*180/np.pi)
     return world_cord

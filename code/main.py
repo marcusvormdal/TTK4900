@@ -22,18 +22,21 @@ def main():
     
     # Initiate plotting
     fig, ax = plt.subplots(2,2)
-
     # Initiate tracks
     start_time = datetime.now()
     prior1 = GaussianState([[0], [1], [0], [1]], np.diag([1.5, 0.5, 1.5, 0.5]), timestamp=start_time)
     prior2 = GaussianState([[0], [1], [20], [-1]], np.diag([1.5, 0.5, 1.5, 0.5]), timestamp=start_time)
     tracks = {Track([prior1]), Track([prior2])}
-    
+    #position variables
+    pos_track = []
+    start_pos = None
+    position = None
+    last_position = None
+    position_delta = None
+    current_lines = []
     # Initiate LSD
     detector = cv2.createLineSegmentDetector(0)
-    orientation = []
-    current_lines = []
-    old_orientation = []
+
     # If using captured data
     if use_capture == True:
         # Create generator for raw lidar data
@@ -42,33 +45,32 @@ def main():
         # Create generator for camera frame
         video = cv2.VideoCapture('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/lidar_collection_31_01/videos/trash_collect.mp4')
         model = torch.hub.load('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolov5', 'custom', path ='C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/pLitterFloat_800x752_to_640x640.pt', source='local', force_reload=True)
-        #lib.use('TkAgg') # pyTorch rbeaks matplotlib
+        pos_stream = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/testrecord.txt'
+        #lib.use('TkAgg') # pyTorch breaks matplotlib
         image_generator = cd.get_camera_frame(video, start_frame = start_frame) 
- 
+        pos_generator = sf.get_position(pos_stream, start_frame = start_frame, start_pos = start_pos)
+        start_pos = next(pos_generator)
+        pos_track.append(start_pos)
+        last_position = start_pos    
     #while(True):
     for i in range(np.shape(raw_lidar_data)[0]):
-        
-        lidar_frame  =  next(lidar_frame_generator)    # All lidar data points at current timestep
-        #if i % 4 == 0:
-        camera_frame =  next(image_generator)          # Image at current timestep
-        predictions, camera_bounds = cd.detect_trash(camera_frame, model)
-
-        position     =  sf.get_position()                 # Current position (x,y,z)
-        old_orientation = orientation
-        orientation  =  sf.get_orientation()              # Current orientation
-        orientation_delta = orientation #- old_orientation
         print('Frame: ', i)
-        
-        #if np.size(lidar_frame) != 0:
-        #    lidar_measurements, current_lines, thresholded_raw, draw_lines  = ld.get_lidar_measurements(detector, lidar_frame, radius = 10, intensity=0, heigth=-0.65, current_lines=current_lines, orientation_delta=orientation_delta)         # All lidar points on the water surface, bounds for plotting
+
+        lidar_frame  =  next(lidar_frame_generator)    # All lidar data points at current timestep
+        if i % 4 == 0:
+            camera_frame =  next(image_generator)          # Image at current timestep
+        position = next(pos_generator)                # Current position (x,y,z)
+        pos_track.append(position)
+        predictions, camera_bounds = cd.detect_trash(camera_frame, model)
+        position_delta = np.array(position) - np.array(last_position)
+        last_position = position
+        if np.size(lidar_frame) != 0:
+            lidar_measurements, current_lines, thresholded_raw, draw_lines  = ld.get_lidar_measurements(detector, lidar_frame, position_delta = position_delta, radius = 10, intensity=0, heigth=-0.65, current_lines=current_lines)         # All lidar points on the water surface, bounds for plotting
         
         #measurements = np.concatenate([lidar_measurements, camera_measurements], axis = 0)  # Treat equally? Might want to weigh differently
         
         #tracks = jd.JPDA(start_time, tracks, measurements)
-        thresholded_raw = 0
-        lidar_measurements = 0
-        draw_lines = 0
-        pd.full_plotter(ax, detector, thresholded_raw, lidar_measurements, current_lines, draw_lines,  camera_bounds, predictions, camera_frame=camera_frame) 
+        pd.full_plotter(ax, detector, thresholded_raw, lidar_measurements, current_lines, draw_lines,  camera_bounds, predictions, pos_track, camera_frame=camera_frame) 
         
 main()
     

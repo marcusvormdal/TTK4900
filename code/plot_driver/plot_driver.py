@@ -4,7 +4,8 @@ from support_functions.support_functions import get_relative_pos
 import cv2
 
 
-def full_plotter(ax, detector,  raw_lidar_data, lidar_measurements, lidar_bounds, draw_lines, camera_bounds, predictions, camera_frame):
+def full_plotter(ax, detector,  raw_lidar_data, lidar_measurements, lidar_bounds, draw_lines, 
+                 camera_bounds, predictions, pos_track, camera_frame):
 
     ax[0][0].set_xlabel('X Label')
     ax[0][0].set_ylabel('Y Label')
@@ -18,9 +19,18 @@ def full_plotter(ax, detector,  raw_lidar_data, lidar_measurements, lidar_bounds
     
     ax[1][0].set_title('Current camera frame')
     
-   # relative_plot(ax[0][0], raw_lidar_data, lidar_measurements, lidar_bounds)
-    #image_plot(ax[0][1], detector, draw_lines)
+    ax[1][1].set_xlim(-25, 25)
+    ax[1][1].set_ylim(-25, 25)
+    ax[1][1].set_xlabel('X')
+    ax[1][1].set_ylabel('Y')
+    ax[1][0].set_title('Current camera frame')
+
+
+    relative_plot(ax[0][0], raw_lidar_data, lidar_measurements, lidar_bounds)
+    image_plot(ax[0][1], detector, draw_lines)
     plot_camera_detection(ax[1][0], camera_frame, camera_bounds, predictions)
+    track_plot(ax[1][1], pos_track)
+    
     plt.pause(0.01)
     
     ax[0][0].clear()
@@ -28,6 +38,11 @@ def full_plotter(ax, detector,  raw_lidar_data, lidar_measurements, lidar_bounds
     ax[1][0].clear()
     ax[1][1].clear()
 
+def track_plot(ax, pos_track):
+    x = np.array(pos_track)[:,1]
+    y = np.array(pos_track)[:,2]
+    ax.plot(x, y, color='green', marker='o', linestyle='dashed', linewidth=1, markersize=1)
+         
 def image_plot(ax, detector, lidar_bounds):
     if np.size(lidar_bounds)!= 0:
         img_lines = np.zeros((100, 100), dtype=np.uint8)
