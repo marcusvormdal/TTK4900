@@ -45,7 +45,7 @@ def track_plot(ax, pos_track):
          
 def image_plot(ax, detector, lidar_bounds):
     if np.size(lidar_bounds)!= 0 :
-        if lidar_bounds[0] != None:
+        if type(lidar_bounds[0]) == np.ndarray:
             img_lines = np.zeros((100, 100), dtype=np.uint8)
             img_lines = detector.drawSegments(img_lines, lidar_bounds[0])
             ax.imshow(img_lines)
@@ -63,11 +63,11 @@ def relative_plot(ax, raw_lidar_data, lidar_measurements, line_segments):
     if np.size(raw_lidar_data) != 0:
         raw_lidar_data = np.array(raw_lidar_data)
         ax.scatter(raw_lidar_data[:,0], raw_lidar_data[:,1], 
-                    marker='x', color='red')
+                    marker='x', color='red', linewidths=1)
     
     if np.size(lidar_measurements) != 0:
         ax.scatter(lidar_measurements[:,0], lidar_measurements[:,1], 
-                    marker='o', color='blue')
+                    marker='o', color='blue', linewidths=1)
 
 def plot_camera_detection(ax, img, boxes, predictions):
 

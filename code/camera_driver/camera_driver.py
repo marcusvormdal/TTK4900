@@ -2,18 +2,27 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import pandas as pd 
+import ffmpeg
+from pprint import pprint
+from datetime import datetime, timedelta
 
 
 def get_camera_frame(video, start_frame):
-    
+    meta_data = ffmpeg.probe('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/lidar_collection_31_01/videos/trash_collect.mp4')
+    end_time = datetime.fromisoformat(meta_data['format']['tags']['creation_time'][0:19])
+    duration = meta_data['streams'][0]['duration']
+    m = timedelta(minutes=(int(float(duration)/60)))
+    s = timedelta(seconds=(int(float(duration)%60)+3))
+    start_time = end_time - m - s
+    stamp = datetime.timestamp(start_time) - 0.25
     video.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-
     success = True
+    
     while success:
-        success,img = video.read()
+        success, img = video.read()
+        stamp = stamp + 0.25
         img = cv2.convertScaleAbs(img, alpha=1.7, beta=0)
-        
-        yield img
+        yield [stamp, img]
         
 def detect_trash(image, model):
 
@@ -23,14 +32,14 @@ def detect_trash(image, model):
     detections = []
     for row in predictions.pandas().xyxy[0].itertuples():
         if row.confidence > 0.35 and row.ymin > 725 and row.ymax > 725:
-            print("detect",row)
+            #print("detect",row)
             if (row.ymin > 1200 or row.ymax > 1200) and (row.xmin > 700 or row.xmax > 700) and (row.xmin < 2100 or row.xmax < 2100):  # filter boat front
                 continue
             detections.append(row)
             box = calculate_angle(row)
             boxes.append(box)
             #print(np.rad2deg(box[0])-90)
-    print(detections)
+    print("Detections:", detections)
     for b in boxes:
         world_cord = get_world_coordinate(0,-90*np.pi/180,0,0,0,0.63, b)
     

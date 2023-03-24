@@ -1,5 +1,6 @@
 import numpy as np
 import pymap3d
+from datetime import datetime, timedelta
 def get_relative_pos(object, obj_t = 'point', centered = False):
     if obj_t == 'point':
         if np.size(object) == 0:
@@ -31,16 +32,23 @@ def get_image_pos(elem):
     
     return image_elem
 
-def get_position(data_stream, start_frame = 0, start_pos = None):
-        
-    print(start_pos)
+def get_gps_date_ts(data_stream):
+    file = open(data_stream, 'r')
+    frames = file.readlines()
+    for frame in frames:
+        if frame[1:6] == 'GNRMC':
+            date = frame.split(',')[9]
+            date= datetime.strptime(date, "%d%m%y")
+            return date
+
+def get_position(data_stream, date, start_frame = 0, start_pos = None):
     file = open(data_stream, 'r')
     frames = file.readlines()
     for frame in frames:
         if frame[1:6] == 'GPGGA':
             
             pos_data = frame.split(',')
-            time   = float(pos_data[1])
+            time   = pos_data[1].replace('.', '')+'0000'
             lat = (float(pos_data[2][0:2]) + float(pos_data[2][2:]) /60) * (np.pi/180)
             lon = (float(pos_data[4][0:3]) + float(pos_data[4][3:]) /60) * (np.pi/180)
             speed, theta =  float(pos_data[6]), float(pos_data[7])*np.pi/180
@@ -48,10 +56,13 @@ def get_position(data_stream, start_frame = 0, start_pos = None):
                 start_pos= [float(lat), float(lon)]
             #print("Start", start_pos)
             #print(time, lat, lon, speed, theta)
-
+            curr_time = datetime.strptime(time, "%H%M%S%f")
+            delta = timedelta(hours = curr_time.hour, minutes =curr_time.minute, seconds = curr_time.second, milliseconds= curr_time.microsecond)
+            curr_date =date + delta
+            timestamp = datetime.timestamp(curr_date)
             ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=None, deg=False)
             print("NED",ned)
-            yield [time, ned[0], ned[1], theta]
+            yield [timestamp, [ned[0], ned[1], theta]]
 
 def update_position(position_delta, element):
     
@@ -63,18 +74,21 @@ def update_position(position_delta, element):
     return new_elem[0:2]
 
 def data_handler(curr_lidar, curr_cam, curr_pos, gen_lidar, gen_cam, gen_pos):
+    print('Lidar_t', curr_lidar[0])
+    print('Camera_t', curr_cam[0])
+    print('Position_t', curr_pos[0])
     data_type = ''
     data = None
-    if curr_lidar.t <curr_cam.t and curr_lidar.t <curr_pos.t:
+    if curr_lidar[0] < curr_cam[0] and curr_lidar[0] < curr_pos[0]:
         data_type = 'lidar'
-        data = curr_lidar
-        curr_lidar = next(gen_pos)
-    if curr_cam.t <curr_lidar.t and curr_cam.t <curr_pos.t:
+        data = curr_lidar[1]
+        curr_lidar = next(gen_lidar)
+    if curr_cam[0] < curr_lidar[0] and curr_cam[0] < curr_pos[0]:
         data_type = 'cam'
-        data = curr_cam
-        curr_cam = next(gen_lidar)
+        data = curr_cam[1]
+        curr_cam = next(gen_cam)
     else:
         data_type = 'pos'
-        data = curr_pos
-        curr_pos = next(gen_cam)
+        data = curr_pos[1]
+        curr_pos = next(gen_pos)
     return data_type, data, curr_lidar, curr_cam, curr_pos

@@ -6,8 +6,8 @@ from support_functions.support_functions import get_image_pos
 def read_pcap_data(filepath):
     config = vd.Config(model='VLP-16', rpm=600)
     cloud_arrays = []
-    for _, points in vd.read_pcap(filepath, config):
-        cloud_arrays.append(points)
+    for stamp, points in vd.read_pcap(filepath, config):
+        cloud_arrays.append([stamp, points])
 
     np.save('lidar_trash_point_array.npy', np.array(cloud_arrays, dtype=object))
     return
@@ -100,12 +100,13 @@ def update_lines(lines, current_lines, position_delta):
     current_lines = list(current_lines)
     current_lines = remove_outdated_lines(current_lines)
     
-    if np.size(lines) > 0 and lines[0] != None:
-        for l in lines[0]:
-            if np.size(current_lines) == 0:
-                current_lines = [[0,l[0]]]
-            else:
-                current_lines.append([0, l[0]])
+    if np.size(lines) > 0:
+        if type(lines[0]) == np.ndarray:
+            for l in lines[0]:
+                if np.size(current_lines) == 0:
+                    current_lines = [[0,l[0]]]
+                else:
+                    current_lines.append([0, l[0]])
 
     return np.array(current_lines, dtype=object)
 
@@ -132,3 +133,6 @@ def update_lines_pos(position_delta, lines):
         #print("After",l)
         updated_lines.append(l)
     return updated_lines
+
+
+
