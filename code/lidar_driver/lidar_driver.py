@@ -12,8 +12,12 @@ def read_pcap_data(filepath):
     np.save('lidar_trash_point_array.npy', np.array(cloud_arrays, dtype=object))
     return
 
-def get_raw_lidar_data(raw_lidar_data, start_frame):
-    for frame in raw_lidar_data[start_frame:]:
+def get_raw_lidar_data(raw_lidar_data, start_stamp):
+    start_time = raw_lidar_data[0][0]
+    frame_offset = int((start_stamp-start_time)*10)
+    for frame in raw_lidar_data:
+        if start_stamp > frame[0]:
+            continue
         yield frame
         
 def get_lidar_measurements(detector, lidar_data, position_delta, radius, intensity, heigth, current_lines):
@@ -62,7 +66,9 @@ def clean_on_line_intersect(lines, lidar_points):
     cleaned_points = []
     x = get_image_pos(lidar_points[:,0])
     y = get_image_pos(lidar_points[:,1])
-    for i in range(np.size(x)):
+    num_intersect = 0
+    for j in range(np.size(x)):
+        i = j - num_intersect
         intersect = False
         y1, x1, y2, x2 = 50,50, x[i], y[i]
         
@@ -89,8 +95,13 @@ def clean_on_line_intersect(lines, lidar_points):
             if (0 <= t <= 1) and (0 <= u <= 1):
                 intersect = True
                 
-        if not intersect:  
-           cleaned_points.append(lidar_points[i])
+        if intersect:
+            x = np.delete(x, i)
+            y = np.delete(y, i)
+            num_intersect += 1
+
+        elif not intersect:  
+           cleaned_points.append(lidar_points[j])
     
     return np.array(cleaned_points)
     

@@ -41,12 +41,11 @@ def get_gps_date_ts(data_stream):
             date= datetime.strptime(date, "%d%m%y")
             return date
 
-def get_position(data_stream, date, start_frame = 0, start_pos = None):
+def get_position(data_stream, date, start_stamp, start_pos = None):
     file = open(data_stream, 'r')
     frames = file.readlines()
     for frame in frames:
         if frame[1:6] == 'GPGGA':
-            
             pos_data = frame.split(',')
             time   = pos_data[1].replace('.', '')+'0000'
             lat = (float(pos_data[2][0:2]) + float(pos_data[2][2:]) /60) * (np.pi/180)
@@ -57,11 +56,13 @@ def get_position(data_stream, date, start_frame = 0, start_pos = None):
             #print("Start", start_pos)
             #print(time, lat, lon, speed, theta)
             curr_time = datetime.strptime(time, "%H%M%S%f")
-            delta = timedelta(hours = curr_time.hour, minutes =curr_time.minute, seconds = curr_time.second, milliseconds= curr_time.microsecond)
-            curr_date =date + delta
+            delta = timedelta(hours = curr_time.hour+1, minutes =curr_time.minute, seconds = curr_time.second, milliseconds= curr_time.microsecond)
+            curr_date = date + delta
             timestamp = datetime.timestamp(curr_date)
             ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=None, deg=False)
             print("NED",ned)
+            if start_stamp > timestamp:
+                continue
             yield [timestamp, [ned[0], ned[1], theta]]
 
 def update_position(position_delta, element):
@@ -83,7 +84,7 @@ def data_handler(curr_lidar, curr_cam, curr_pos, gen_lidar, gen_cam, gen_pos):
         data_type = 'lidar'
         data = curr_lidar[1]
         curr_lidar = next(gen_lidar)
-    if curr_cam[0] < curr_lidar[0] and curr_cam[0] < curr_pos[0]:
+    elif curr_cam[0] < curr_lidar[0] and curr_cam[0] < curr_pos[0]:
         data_type = 'cam'
         data = curr_cam[1]
         curr_cam = next(gen_cam)

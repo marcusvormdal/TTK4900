@@ -18,11 +18,12 @@ import plot_driver.plot_driver as pd
 def main():
     # Control variables
     use_capture = True
-    start_frame = 3615 
+    start_stamp = 1675167671
     #3615 for trash bag
-    
+    video_path = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/lidar_collection_31_01/videos/full_run.mp4'
     # Initiate plotting
     fig, ax = plt.subplots(2,2)
+    pd.initiate_plot(ax)
     # Initiate tracks
     start_time = datetime.now()
     prior1 = GaussianState([[0], [1], [0], [1]], np.diag([1.5, 0.5, 1.5, 0.5]), timestamp=start_time)
@@ -37,27 +38,27 @@ def main():
     predictions = []
     start_pos = None
     position = None
-    last_position = None
-    position_delta = None
+    last_position = [0,0,0,0]
+    position_delta = [0,0,0,0]
 
     # Initiate LSD
     detector = cv2.createLineSegmentDetector(0)
 
     # If using captured data
     if use_capture == True:
-        #ld.read_pcap_data('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/lidar_collection_31_01/lidar_data/2023-01-31-12-48-25_Velodyne-VLP-16-Data.pcap')   # Redo lidar_data
+        #ld.read_pcap_data('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/lidar_collection_31_01/lidar_data/2023-01-31-13-18-08_Velodyne-VLP-16-Data.pcap')   # Redo lidar_data
         
         # load data
         raw_lidar_data = np.load('./lidar_driver/lidar_trash_point_array.npy', allow_pickle=True)
-        video = cv2.VideoCapture('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/lidar_collection_31_01/videos/trash_collect.mp4')
+        video = cv2.VideoCapture(video_path)
         model = torch.hub.load('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolov5', 'custom', path ='C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/pLitterFloat_800x752_to_640x640.pt', source='local', force_reload=True)
         pos_stream = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/testrecord.txt'
         gps_date = sf.get_gps_date_ts(pos_stream)  # Need to reseolve once
 
         # cast generators
-        lidar_generator = ld.get_raw_lidar_data(raw_lidar_data, start_frame = start_frame)
-        camera_generator = cd.get_camera_frame(video, start_frame = start_frame) 
-        pos_generator = sf.get_position(pos_stream, gps_date,  start_frame = start_frame, start_pos = start_pos)
+        lidar_generator = ld.get_raw_lidar_data(raw_lidar_data, start_stamp)
+        camera_generator = cd.get_camera_frame(video, start_stamp, video_path) 
+        pos_generator = sf.get_position(pos_stream, gps_date, start_stamp, start_pos = start_pos)
         
         # Initialize data frames
         curr_lidar = next(lidar_generator)
@@ -85,7 +86,7 @@ def main():
             last_position = data
          
         #tracks = jd.JPDA(start_time, tracks, measurements)
-        pd.full_plotter(ax, detector, thresholded_raw, lidar_measurements, current_lines, draw_lines, camera_bounds, predictions, pos_track, camera_frame=curr_cam[1]) 
+        pd.full_plotter(ax, data_type, detector, thresholded_raw, lidar_measurements, current_lines, draw_lines, camera_bounds, predictions, pos_track, camera_frame=curr_cam[1]) 
     
     
     '''

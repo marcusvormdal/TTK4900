@@ -4,9 +4,7 @@ from support_functions.support_functions import get_relative_pos
 import cv2
 
 
-def full_plotter(ax, detector,  raw_lidar_data, lidar_measurements, lidar_bounds, draw_lines, 
-                 camera_bounds, predictions, pos_track, camera_frame):
-
+def initiate_plot(ax):
     ax[0][0].set_xlabel('X Label')
     ax[0][0].set_ylabel('Y Label')
     ax[0][0].set_title('Lidar data')
@@ -24,19 +22,28 @@ def full_plotter(ax, detector,  raw_lidar_data, lidar_measurements, lidar_bounds
     ax[1][1].set_xlabel('X')
     ax[1][1].set_ylabel('Y')
     ax[1][0].set_title('Current camera frame')
-
-
-    relative_plot(ax[0][0], raw_lidar_data, lidar_measurements, lidar_bounds)
-    image_plot(ax[0][1], detector, draw_lines)
-    plot_camera_detection(ax[1][0], camera_frame, camera_bounds, predictions)
-    track_plot(ax[1][1], pos_track)
     
+def full_plotter(ax, data_type, detector,  raw_lidar_data, lidar_measurements, lidar_bounds, draw_lines, 
+                 camera_bounds, predictions, pos_track, camera_frame):
+
+
+
+    if data_type == 'lidar':
+        relative_plot(ax[0][0], raw_lidar_data, lidar_measurements, lidar_bounds)
+        #image_plot(ax[0][1], detector, draw_lines)
+        #ax[0][0].clear()
+        #ax[0][1].clear()
+    if data_type == 'cam':
+        plot_camera_detection(ax[1][0], camera_frame, camera_bounds, predictions)
+        #ax[1][0].clear()
+    else:
+        track_plot(ax[1][1], pos_track)
+        #ax[1][1].clear()
+
     plt.pause(0.01)
     
-    ax[0][0].clear()
-    ax[0][1].clear()
-    ax[1][0].clear()
-    ax[1][1].clear()
+
+
 
 def track_plot(ax, pos_track):
     x = np.array(pos_track)[:,1]

@@ -7,23 +7,25 @@ from pprint import pprint
 from datetime import datetime, timedelta
 
 
-def get_camera_frame(video, start_frame):
-    meta_data = ffmpeg.probe('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/lidar_collection_31_01/videos/trash_collect.mp4')
+def get_camera_frame(video, start_stamp, video_path):
+    meta_data = ffmpeg.probe(video_path)
     end_time = datetime.fromisoformat(meta_data['format']['tags']['creation_time'][0:19])
     duration = meta_data['streams'][0]['duration']
-    m = timedelta(minutes=(int(float(duration)/60)))
+    frame_num = int(meta_data['streams'][0]['nb_frames'])
+    m = timedelta(minutes=(int(float(duration)/60))-60)
     s = timedelta(seconds=(int(float(duration)%60)+3))
     start_time = end_time - m - s
     stamp = datetime.timestamp(start_time) - 0.25
-    video.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+    video.set(cv2.CAP_PROP_POS_FRAMES, 0)
     success = True
-    
-    while success:
+    for i in range(frame_num):
         success, img = video.read()
         stamp = stamp + 0.25
+        if start_stamp > stamp or not success:
+            continue
         img = cv2.convertScaleAbs(img, alpha=1.7, beta=0)
         yield [stamp, img]
-        
+
 def detect_trash(image, model):
 
     predictions = model(image)
@@ -39,7 +41,8 @@ def detect_trash(image, model):
             box = calculate_angle(row)
             boxes.append(box)
             #print(np.rad2deg(box[0])-90)
-    print("Detections:", detections)
+    if np.size(detections) > 0:
+        print("Detections:", detections)
     for b in boxes:
         world_cord = get_world_coordinate(0,-90*np.pi/180,0,0,0,0.63, b)
     
