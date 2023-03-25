@@ -5,6 +5,7 @@ import pandas as pd
 import ffmpeg
 from pprint import pprint
 from datetime import datetime, timedelta
+from time import process_time
 
 
 def get_camera_frame(video, start_stamp, video_path):
@@ -27,9 +28,10 @@ def get_camera_frame(video, start_stamp, video_path):
         yield [stamp, img]
 
 def detect_trash(image, model):
-
+    t1_start = process_time() 
     predictions = model(image)
-        
+    t1_stop = process_time()
+    print('cam processing : ', t1_stop-t1_start)
     boxes = []
     detections = []
     for row in predictions.pandas().xyxy[0].itertuples():
@@ -53,7 +55,7 @@ def calculate_angle(bbox):
     """Assumes plane on water level"""
     obj_point = ((bbox.xmax+bbox.xmin)/2, bbox.ymax)  # ymax to do bottom detection
     box_data = (np.arctan2(1520-obj_point[1], obj_point[0]-1344)*180/np.pi-90, obj_point[0], obj_point[1])
-    print(box_data)
+    #print(box_data)
     return box_data
 
 
@@ -75,7 +77,7 @@ def get_world_coordinate(psi,theta,phi, t1,t2,t3, box_coord):
     R = np.zeros([3,3])
     R[:, 0:2] = (R_z@R_y@R_x)[:, 0:2]
     R[2,0], R[2,1], R[2,2] = t1, t2, t3
-    print(R)
+    #print(R)
     
     i = np.array([[f, 0, ox],[0,f, oy],[0,0,1]])
     

@@ -71,7 +71,8 @@ def clean_on_line_intersect(lines, lidar_points):
         i = j - num_intersect
         intersect = False
         y1, x1, y2, x2 = 50,50, x[i], y[i]
-        
+        print(np.size(lines))
+
         for l in lines:
             x3, y3, x4, y4 = np.floor(l[0]), np.floor(l[1]), np.floor(l[2]), np.floor(l[3])
 
@@ -131,14 +132,13 @@ def remove_outdated_lines(lines):
 
 def update_lines_pos(position_delta, lines):
     updated_lines = []
-    R = np.array([[np.cos(-position_delta[3]), -np.sin(-position_delta[3]), 0],
-                [np.sin(-position_delta[3]), np.cos(-position_delta[3]), 0],
+    R = np.array([[np.cos(-position_delta[2]), -np.sin(-position_delta[2]), 0],
+                [np.sin(-position_delta[2]), np.cos(-position_delta[2]), 0],
                 [0,0,1]])
-    print("delta", position_delta)
     for l in lines:
         #print("Before",l)
-        new_line_start = (R @ np.array([l[1][0], l[1][1], 0]))[0:2] - position_delta[1:3]
-        new_line_end = (R @ np.array([l[1][2], l[1][3], 0]))[0:2] - position_delta[1:3]
+        new_line_start = (R @ np.array([l[1][0], l[1][1], 0]))[0:2] - position_delta[0:2]
+        new_line_end = (R @ np.array([l[1][2], l[1][3], 0]))[0:2] - position_delta[0:2]
         l[1][0], l[1][1] = new_line_start[0], new_line_start[1]
         l[1][2], l[1][3] = new_line_end[0], new_line_end[1]
         #print("After",l)
