@@ -8,8 +8,11 @@ from datetime import datetime
 from time import process_time
 
 from stonesoup.types.state import GaussianState
+from stonesoup.types.array import StateVector
 from stonesoup.types.track import Track
-
+from stonesoup.plotter import Plotterly
+from stonesoup.types.detection import Detection
+from stonesoup.models.measurement.linear import LinearGaussian
 
 import lidar_driver.lidar_driver as ld
 import camera_driver.camera_driver as cd
@@ -17,7 +20,7 @@ import jpda_driver.jpda_driver as jd
 import support_functions.support_functions as sf
 import plot_driver.plot_driver as pd
 
-def main():
+def run():
     # Control variables
     use_capture = True
     start_stamp = 1675167671
@@ -51,6 +54,7 @@ def main():
 
     # Initiate LSD
     detector = cv2.createLineSegmentDetector(0)
+    plotter = Plotterly()
 
     # If using captured data
     if use_capture == True:
@@ -75,10 +79,11 @@ def main():
         print("Synchronizing frames")
         #Track initialization 
         last_position = curr_pos[1]
-           
+        measurement_model = LinearGaussian(ndim_state=8, mapping=[0, 2, 4, 6],
+                                   noise_covar=np.diag([1**2, 1**2, 1**2, 1**2]))
     while(True):
         t1_start = process_time() 
-        data_type, data, curr_lidar, curr_cam, curr_pos = sf.data_handler(curr_lidar, curr_cam, curr_pos, lidar_generator, camera_generator, pos_generator)
+        data_type, ts, data, curr_lidar, curr_cam, curr_pos = sf.data_handler(curr_lidar, curr_cam, curr_pos, lidar_generator, camera_generator, pos_generator)
         if data_type == 'lid':
             lidar_measurements, current_lines, thresholded_raw, draw_lines  = ld.get_lidar_measurements(detector, data, position_delta = position_delta, radius = 10, intensity=0, heigth=-0.65, current_lines=current_lines)         # All lidar points on the water surface, bounds for plotting
      
@@ -96,6 +101,17 @@ def main():
         #pd.full_plotter(ax, data_type, detector, thresholded_raw, lidar_measurements, current_lines, draw_lines, camera_bounds, predictions, last_position, camera_frame=curr_cam[1]) 
         #t2_stop = process_time()
         #print('Plot Time usage: ', t2_stop-t2_start)
-    
-main()
+        state_vector = StateVector([0,0,0,0,0,0,0,0])
+        data = Detection(state_vector =state_vector, timestamp =ts, measurement_model = measurement_model)
+        yield data
+        
+def main():
+    runner = run()
+    tracker = jd.track(runner)
+    for timestamp, tracks in tracker:
+        print(timestamp)
+        print(tracks)
+    #while True:
+        #data_type = next(runner)
+main()  
     

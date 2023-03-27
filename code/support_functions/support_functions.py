@@ -81,21 +81,25 @@ def update_position(position_delta, element):
     return new_elem[0:2]
 
 def data_handler(curr_lidar, curr_cam, curr_pos, gen_lidar, gen_cam, gen_pos):
-    #print('Lidar_t', curr_lidar[0])
-    #print('Camera_t', curr_cam[0])
-    #print('Position_t', curr_pos[0])
+    print('Lidar_t', curr_lidar[0])
+    print('Camera_t', curr_cam[0])
+    print('Position_t', curr_pos[0])
     data_type = ''
     data = None
     if curr_lidar[0] < curr_cam[0] and curr_lidar[0] < curr_pos[0]:
         data_type = 'lid'
+        ts =  curr_lidar[0]
         data = curr_lidar[1]
         curr_lidar = next(gen_lidar)
     elif curr_cam[0] < curr_lidar[0] and curr_cam[0] < curr_pos[0]:
         data_type = 'cam'
+        ts =  curr_cam[0]
         data = curr_cam[1]
         curr_cam = next(gen_cam)
     else:
         data_type = 'pos'
+        ts =  curr_pos[0]
         data = curr_pos[1]
         curr_pos = next(gen_pos)
-    return data_type, data, curr_lidar, curr_cam, curr_pos
+        
+    return data_type, ts, data, curr_lidar, curr_cam, curr_pos
