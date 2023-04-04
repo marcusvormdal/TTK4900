@@ -85,8 +85,10 @@ def run():
         t1_start = process_time() 
         data_type, ts, data, curr_lidar, curr_cam, curr_pos = sf.data_handler(curr_lidar, curr_cam, curr_pos, lidar_generator, camera_generator, pos_generator)
         if data_type == 'lid':
+            t2_start = process_time() 
             lidar_measurements, current_lines, thresholded_raw, draw_lines  = ld.get_lidar_measurements(detector, data, position_delta = position_delta, radius = 10, intensity=0, heigth=-0.65, current_lines=current_lines)         # All lidar points on the water surface, bounds for plotting
-     
+            t2_stop = process_time()
+            print('Lidar Time usage: ', t2_stop-t2_start)
         elif data_type == 'cam':
             predictions, camera_bounds = cd.detect_trash(data, model)
 
@@ -98,7 +100,7 @@ def run():
         t1_stop = process_time()
         print(data_type, ' : ', t1_stop-t1_start)
         #t2_start = process_time() 
-        #pd.full_plotter(ax, data_type, detector, thresholded_raw, lidar_measurements, current_lines, draw_lines, camera_bounds, predictions, last_position, camera_frame=curr_cam[1]) 
+        pd.full_plotter(ax, data_type, detector, thresholded_raw, lidar_measurements, current_lines, draw_lines, camera_bounds, predictions, last_position, camera_frame=curr_cam[1]) 
         #t2_stop = process_time()
         #print('Plot Time usage: ', t2_stop-t2_start)
         state_vector = StateVector([0,0,0,0,0,0,0,0])
@@ -107,10 +109,12 @@ def run():
         
 def main():
     runner = run()
-    tracker = jd.track(runner)
-    for timestamp, tracks in tracker:
-        print(timestamp)
-        print(tracks)
+    while True:
+        next(runner)
+    #tracker = jd.track(runner)
+    #for timestamp, tracks in tracker:
+    #    print(timestamp)
+    #    print(tracks)
     #while True:
         #data_type = next(runner)
 main()  

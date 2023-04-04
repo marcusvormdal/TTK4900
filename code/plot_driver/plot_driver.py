@@ -16,7 +16,7 @@ def initiate_plot(ax):
 def full_plotter(ax, data_type, detector,  raw_lidar_data, lidar_measurements, lidar_bounds, draw_lines, 
                  camera_bounds, predictions, pos_track, camera_frame):
 
-    if data_type == 'lidar':
+    if data_type == 'lid':
         ax[0].clear()
         ax[0].set_xlabel('X Label')
         ax[0].set_ylabel('Y Label')
@@ -46,7 +46,7 @@ def image_plot(ax, detector, lidar_bounds):
             ax.imshow(img_lines)
 
 def relative_plot(ax, raw_lidar_data, lidar_measurements, line_segments):
-    
+
     relative_lines = []
     
     if np.size(line_segments) != 0:

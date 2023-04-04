@@ -67,45 +67,51 @@ def clean_on_line_intersect(lines, lidar_points):
     x = get_image_pos(lidar_points[:,0])
     y = get_image_pos(lidar_points[:,1])
     num_intersect = 0
+    
     for j in range(np.size(x)):
         i = j - num_intersect
         intersect = False
-        y1, x1, y2, x2 = 50,50, x[i], y[i]
-        print(np.size(lines))
-
+        l1 = [50,50,y[i],x[i]]
         for l in lines:
-            x3, y3, x4, y4 = np.floor(l[0]), np.floor(l[1]), np.floor(l[2]), np.floor(l[3])
-
-            t_num = (x1-x3)*(y3-y4)-(y1-y3)*(x3-x4)
-            t_den = (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4)
-            u_num = (x1-x3)*(y1-y2)-(y1-y3)*(x1-x2)
-            u_den = (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4)
-            if u_den == 0 or t_den == 0:
-                continue
-            t = t_num / t_den
-            u = u_num /u_den
-            if t >= 0.5:
-                t = t - 0.2
-            else:
-                t = t + 0.2
-            if u >= 0.5:
-                u = u - 0.2
-            else:
-                u = u + 0.2
+            l2 = [np.floor(l[0]), np.floor(l[1]), np.floor(l[2]), np.floor(l[3])]
+            intersect = find_line_intersect(l1, l2, 0.20)
+            if intersect:
+                break
             
-            if (0 <= t <= 1) and (0 <= u <= 1):
-                intersect = True
-                
         if intersect:
             x = np.delete(x, i)
             y = np.delete(y, i)
             num_intersect += 1
 
         elif not intersect:  
-           cleaned_points.append(lidar_points[j])
-    
+            cleaned_points.append(lidar_points[j])
+                
     return np.array(cleaned_points)
+
+def find_line_intersect(l1, l2, delta):
+    t_num = (l1[0]-l2[0])*(l2[1]-l2[3])-(l1[1]-l2[1])*(l2[0]-l2[2])
+    t_den = (l1[0]-l1[2])*(l2[1]-l2[3])-(l1[1]-l1[3])*(l2[0]-l2[2])
+    u_num = (l1[0]-l2[0])*(l1[1]-l1[3])-(l1[1]-l2[1])*(l1[0]-l1[2])
+    u_den = (l1[0]-l1[2])*(l2[1]-l2[3])-(l1[1]-l1[3])*(l2[0]-l2[2])
+    if u_den == 0 or t_den == 0:
+        return False
     
+    t = t_num / t_den
+    u = u_num /u_den
+    if t >= 0.5:
+        t = t - delta
+    else:
+        t = t + delta
+    if u >= 0.5:
+        u = u - delta
+    else:
+        u = u + delta
+    
+    if (0 <= t <= 1) and (0 <= u <= 1):
+        return True
+    else:
+        return False                
+                
 def update_lines(lines, current_lines, position_delta):
     
     current_lines = update_lines_pos(position_delta, current_lines)
@@ -119,7 +125,7 @@ def update_lines(lines, current_lines, position_delta):
                     current_lines = [[0,l[0]]]
                 else:
                     current_lines.append([0, l[0]])
-
+    current_lines = remove_covered_lines(current_lines)
     return np.array(current_lines, dtype=object)
 
 def remove_outdated_lines(lines):
@@ -129,6 +135,32 @@ def remove_outdated_lines(lines):
             l[0] += 1
             updated_lines.append(l)
     return updated_lines
+
+def remove_covered_lines(lines_w_life):
+    lines = np.array(lines_w_life)[:,1]
+    ep_lines = []
+    new_lines = []
+    for l in lines:
+        ep_lines.append([[50,50, np.floor(l[0]), np.floor(l[1])],[50,50, np.floor(l[2]), np.floor(l[3])]])
+    for i, ep_l in enumerate(ep_lines):
+        intersect_1 = False
+        intersect_2 = False
+        intersect = False
+        for j, l in enumerate(lines):
+            if i == j:
+                continue
+            if not intersect_1:
+                intersect_1 = find_line_intersect(ep_l[0], l, 0.0)
+            if not intersect_2:
+                intersect_2 = find_line_intersect(ep_l[1], l, 0.0)
+            if intersect_1 and intersect_2:
+                intersect = True
+                break
+        if intersect == False:
+            new_lines.append(lines_w_life[i])
+            
+    return new_lines
+    
 
 def update_lines_pos(position_delta, lines):
     updated_lines = []
