@@ -68,7 +68,9 @@ def get_position(data_stream, date, start_stamp):
                 start_pos= [float(lat), float(lon)]
                 set_start_pos = True
             ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=None, deg=False)
-            #print("NED",ned)
+            ned = np.array([[1,0,0],
+                    [0,np.cos(np.pi), -np.sin(np.pi)],
+                    [0,np.sin(np.pi), np.cos(np.pi)]]) @ ned     # To go from ned to body
             yield [timestamp, [ned[0], ned[1], theta]]
 
 def update_position(position_delta, element):

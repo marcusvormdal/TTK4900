@@ -137,6 +137,8 @@ def remove_outdated_lines(lines):
     return updated_lines
 
 def remove_covered_lines(lines_w_life):
+    if lines_w_life == []:
+        return lines_w_life
     lines = np.array(lines_w_life)[:,1]
     ep_lines = []
     new_lines = []

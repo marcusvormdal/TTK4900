@@ -23,7 +23,7 @@ import plot_driver.plot_driver as pd
 def run():
     # Control variables
     use_capture = True
-    start_stamp = 1675167671
+    start_stamp = 1675168005
     #3615 for trash bag
     video_path = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/lidar_collection_31_01/videos/full_run.mp4'
     # Initiate plotting
@@ -51,7 +51,7 @@ def run():
     position = None
     last_position = [0,0,0]
     position_delta = [0,0,0]
-
+    temp = []
     # Initiate LSD
     detector = cv2.createLineSegmentDetector(0)
     plotter = Plotterly()
@@ -85,32 +85,45 @@ def run():
         t1_start = process_time() 
         data_type, ts, data, curr_lidar, curr_cam, curr_pos = sf.data_handler(curr_lidar, curr_cam, curr_pos, lidar_generator, camera_generator, pos_generator)
         if data_type == 'lid':
-            t2_start = process_time() 
-            lidar_measurements, current_lines, thresholded_raw, draw_lines  = ld.get_lidar_measurements(detector, data, position_delta = position_delta, radius = 10, intensity=0, heigth=-0.65, current_lines=current_lines)         # All lidar points on the water surface, bounds for plotting
-            t2_stop = process_time()
-            print('Lidar Time usage: ', t2_stop-t2_start)
+            lidar_measurements, current_lines, thresholded_raw, draw_lines  = [], [], [], [] # ld.get_lidar_measurements(detector, data, position_delta = position_delta, radius = 10, intensity=0, heigth=-0.65, current_lines=current_lines)         # All lidar points on the water surface, bounds for plotting
         elif data_type == 'cam':
-            predictions, camera_bounds = cd.detect_trash(data, model)
+            predictions, camera_bounds = [], [] #cd.detect_trash(data, model)
 
         elif data_type == 'pos':
             position_delta = np.array(data) - np.array(last_position)
             last_position = data
-         
+            temp.append(last_position)
         #tracks = jd.JPDA(start_time, tracks, measurements)
         t1_stop = process_time()
         print(data_type, ' : ', t1_stop-t1_start)
         #t2_start = process_time() 
-        pd.full_plotter(ax, data_type, detector, thresholded_raw, lidar_measurements, current_lines, draw_lines, camera_bounds, predictions, last_position, camera_frame=curr_cam[1]) 
+        #pd.full_plotter(ax, data_type, detector, thresholded_raw, lidar_measurements, current_lines, draw_lines, camera_bounds, predictions, last_position, camera_frame=curr_cam[1]) 
         #t2_stop = process_time()
         #print('Plot Time usage: ', t2_stop-t2_start)
         state_vector = StateVector([0,0,0,0,0,0,0,0])
         data = Detection(state_vector =state_vector, timestamp =ts, measurement_model = measurement_model)
-        yield data
+        yield data, data_type, ax, temp
         
 def main():
     runner = run()
+    cam, lid = False, False
+    i = 0
     while True:
-        next(runner)
+        i +=1
+        data, data_type, ax, temp = next(runner)
+        if data_type == 'cam':
+            cam = True
+        if data_type == 'lid':
+            lid = True
+        if cam and lid:
+            pass
+            #plt.pause(100)
+        print(i)
+        if i == 3000:
+            temp = np.array(temp)
+            ax[1].plot(temp[:,0], temp[:,1], color='green', marker='o', linestyle='dashed', linewidth=0.5, markersize=0.5)
+            plt.pause(100)
+
     #tracker = jd.track(runner)
     #for timestamp, tracks in tracker:
     #    print(timestamp)

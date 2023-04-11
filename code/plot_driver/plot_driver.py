@@ -7,8 +7,8 @@ import cv2
 def initiate_plot(ax):
     
     ax[1].set_title('Current camera frame')
-    ax[1].set_xlim(-5, 5)
-    ax[1].set_ylim(-5, 5)
+    ax[1].set_xlim(-20, 20)
+    ax[1].set_ylim(-20, 20)
     ax[1].set_xlabel('X')
     ax[1].set_ylabel('Y')
     ax[2].set_title('Current camera frame')
@@ -23,11 +23,12 @@ def full_plotter(ax, data_type, detector,  raw_lidar_data, lidar_measurements, l
         ax[0].set_title('Lidar data')
         ax[0].set_xlim([-10, 10])
         ax[0].set_ylim([-10, 10])
-        relative_plot(ax[0], raw_lidar_data, lidar_measurements, lidar_bounds)
+        #relative_plot(ax[0], raw_lidar_data, lidar_measurements, lidar_bounds)
         #image_plot(ax[0][1], detector, draw_lines)
         #ax[0][1].clear()
     if data_type == 'cam':
-        plot_camera_detection(ax[2], camera_frame, camera_bounds, predictions)
+        pass
+        #plot_camera_detection(ax[2], camera_frame, camera_bounds, predictions)
         #ax[1][0].clear()
     else:
         track_plot(ax[1], pos_track)
@@ -36,7 +37,7 @@ def full_plotter(ax, data_type, detector,  raw_lidar_data, lidar_measurements, l
     plt.pause(0.01)
     
 def track_plot(ax, pos_track):
-    ax.plot(pos_track[0], pos_track[1], color='green', marker='o', linestyle='dashed', linewidth=1, markersize=1)
+    ax.plot(pos_track[0], pos_track[1], color='green', marker='o', linestyle='dashed', linewidth=0.5, markersize=0.5)
          
 def image_plot(ax, detector, lidar_bounds):
     if np.size(lidar_bounds)!= 0 :
