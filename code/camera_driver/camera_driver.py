@@ -7,7 +7,6 @@ from pprint import pprint
 from datetime import datetime, timedelta
 from time import process_time
 
-
 def get_camera_frame(video, start_stamp, video_path):
     meta_data = ffmpeg.probe(video_path)
     end_time = datetime.fromisoformat(meta_data['format']['tags']['creation_time'][0:19])
@@ -29,28 +28,29 @@ def get_camera_frame(video, start_stamp, video_path):
         img = cv2.convertScaleAbs(img, alpha=1.7, beta=0)
         yield [stamp, img]
 
-def detect_trash(image, model):
+def detect_trash(image, model, rot):
     t1_start = process_time() 
     predictions = model(image)
     t1_stop = process_time()
     print('cam processing : ', t1_stop-t1_start)
     boxes = []
     detections = []
+    world_coords = []
     for row in predictions.pandas().xyxy[0].itertuples():
         if row.confidence > 0.35 and row.ymin > 725 and row.ymax > 725:
-            #print("detect",row)
             if (row.ymin > 1200 or row.ymax > 1200) and (row.xmin > 700 or row.xmax > 700) and (row.xmin < 2100 or row.xmax < 2100):  # filter boat front
                 continue
             detections.append(row)
             box = calculate_angle(row)
             boxes.append(box)
-            #print(np.rad2deg(box[0])-90)
     if np.size(detections) > 0:
         print("Detections:", detections)
     for b in boxes:
-        world_cord = get_world_coordinate(0,-90*np.pi/180,0,0,0,0.63, b)
-    
-    return detections, boxes
+        R = rotation_matrix(rot[0]+np.radians(-90), rot[1], rot[1]+np.radians(90))
+        world_coord = alternate_world_coord(b[0],b[1], R, [0,0,0.63])
+        world_coords.append(world_coord)
+        
+    return detections, boxes, world_coords
 
 
 def calculate_angle(bbox):
@@ -60,11 +60,31 @@ def calculate_angle(bbox):
     #print(box_data)
     return box_data
 
-
 def get_world_coordinate(psi,theta,phi, t1,t2,t3, box_coord):
-    f = 2.8
+    #world_cord = get_world_coordinate(np.radians(-90),np.radians(-90),0,0,0,-0.63, b)
     ox = 1344
     oy = 760
+    R = rotation_matrix(psi,theta,phi)
+    
+    col_3 = -R @ [t1,t2,t3] 
+    R[0,2], R[1,2], R[2,2] = col_3[0], col_3[1], col_3[2]
+        
+    i = np.array([[1307, 0, ox],[0,1307, oy],[0,0,1]])
+    hom_cord = np.array([box_coord[1], box_coord[2], 1])
+    
+    world_cord = (np.linalg.inv(R) @ np.linalg.inv(i).round(5) @ hom_cord.T).round(3)
+    
+    print("Wcord:",world_cord, np.arctan2(world_cord[1], world_cord[0])*180/np.pi)
+    return world_cord
+
+def test_world_coord():
+    psi,theta,phi = np.radians(-90),0,np.radians(90)
+    box_coord  = (0,1344,1500)
+    #world_cord = get_world_coordinate(psi, theta, phi, t1, t2, t3, box_coord)
+    R = rotation_matrix(psi,theta,phi)
+    world_cord_2 = alternate_world_coord(box_coord[1],box_coord[2], R, [0,0,0.63])
+    
+def rotation_matrix(psi, theta, phi):
     
     R_z = np.array([[np.cos(psi), -np.sin(psi), 0],
                   [np.sin(psi), np.cos(psi), 0],
@@ -76,36 +96,20 @@ def get_world_coordinate(psi,theta,phi, t1,t2,t3, box_coord):
                     [0,np.cos(phi), -np.sin(phi)],
                     [0,np.sin(phi), np.cos(phi)]])
     
-    R_bc = (R_z@R_y@R_x)
-    R_bc_inv = np.linalg.inv(R_bc).round(5)
-    R = np.zeros([3,3])
-    
-    R[0:2, 0:2] = R_bc[0:2, 0:2]
+    R = (R_z@R_y@R_x).round(5)
+    return R   
 
-    test = [t1,t2,t3]
-    test = -R_bc_inv @ test 
-    
-    print(test)
-    
-    R[2,0], R[2,1], R[2,2] = test[0], test[1], test[2]
-    i = np.array([[f, 0, ox],[0,f, oy],[0,0,1]])
+def alternate_world_coord(u,v, R, t_wc):
+    theta = ((u - 1344) / 2688)*np.radians(109)
+    psi =  ((v - 760) / 1520)*np.radians(60)
+    v_c = [np.tan(theta), np.tan(psi), 1]
+    v_w = R@v_c + np.array([t_wc[0], t_wc[1], 0])
+    s = -t_wc[2] / v_w[2]
+    x_w = t_wc + s*v_w
+    return x_w
 
-    print(np.linalg.pinv(R).round(5))
-    print(np.linalg.inv(i).round(5))
-    hom_cord = np.array([box_coord[1], box_coord[2], 1])
-    world_cord = (np.linalg.pinv(R).round(5) @ np.linalg.inv(i).round(5) @ hom_cord.T).round(2) / 1.59
+#def __main__():
+#    test_world_coord()
     
-    print("Wcord:",world_cord, np.arctan2(world_cord[1], world_cord[0])*180/np.pi)
-    return world_cord
+#__main__()
 
-def test_world_coord():
-    psi,theta,phi = (np.pi/180)*90,0,np.pi
-    t1,t2,t3 = 0,0,0.63
-    box_coord  = (0,1344,1090)
-    
-    world_cord = get_world_coordinate(psi, theta, phi, t1, t2, t3, box_coord)
-    
-def __main__():
-    test_world_coord()
-    
-__main__()
