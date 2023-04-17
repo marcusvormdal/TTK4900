@@ -27,14 +27,14 @@ def get_lidar_measurements(detector, lidar_data, position_delta, radius, intensi
     unique_points = np.unique(lidar_data, axis=0)    
     
     for point in unique_points:
-        if np.linalg.norm([point[0], point[1]])<= radius and point[2] < heigth and point[3] > intensity: 
+        if np.linalg.norm([point[0], point[1]])<= radius and point[2] < heigth and point[3] >= intensity: 
             frame_points.append(point)
             
     frame_points = np.array(frame_points)
-    
     lines = []
     new_lines = []
     lidar_measurements = []
+    
     if np.size(frame_points) != 0:
         lidar_image = lidar_to_image(frame_points)
         #cv2.imshow('converted', lidar_image)
@@ -43,7 +43,7 @@ def get_lidar_measurements(detector, lidar_data, position_delta, radius, intensi
         lines = update_lines(new_lines, current_lines, position_delta)
         lidar_measurements = clean_on_line_intersect(lines, frame_points)
     
-    return lidar_measurements, lines, frame_points, new_lines
+    return lidar_measurements, lines, frame_points
 
 
 def lidar_to_image(lidar_points, height = 100, width = 100):   

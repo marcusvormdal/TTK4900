@@ -47,8 +47,10 @@ def detect_trash(image, model, rot):
     if np.size(detections) > 0:
         print("Detections:", detections)
     for b in boxes:
+        print(b)
         R = rotation_matrix(rot[0]+np.radians(-90), rot[1], rot[1]+np.radians(90))
         world_coord = alternate_world_coord(b[0],b[1], R, [0,0,0.63])
+        print(world_coord)
         world_coords.append(world_coord)
         
     return [detections, world_coords, boxes]
@@ -107,7 +109,7 @@ def alternate_world_coord(u,v, R, t_wc):
     v_w = R@v_c + np.array([t_wc[0], t_wc[1], 0])
     s = -t_wc[2] / v_w[2]
     x_w = t_wc + s*v_w
-    return x_w
+    return x_w.round(2)
 
 #def __main__():
 #    test_world_coord()

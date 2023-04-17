@@ -35,11 +35,11 @@ def run(start_stamp):
     current_lines = []
     thresholded_raw = []
     detections = []
+    track = []
     position = None
     last_position = [0,0,0]
     position_delta = [0,0,0]
     ref_heading = 0
-    temp = []
     
     # Initiate LSD
     detector = cv2.createLineSegmentDetector(0)
@@ -75,29 +75,26 @@ def run(start_stamp):
         data_type, ts, data, curr_lidar, curr_cam, curr_pos = sf.data_handler(curr_lidar, curr_cam, curr_pos, lidar_generator, camera_generator, pos_generator)
         
         if data_type == 'lid':
-            lidar_measurements, current_lines, thresholded_raw, draw_lines  =   ld.get_lidar_measurements(detector, data, position_delta = position_delta, radius = 10, intensity=0, heigth=-0.65, current_lines=current_lines)         # All lidar points on the water surface, bounds for plotting
+            lidar_measurements, current_lines, thresholded_raw = ld.get_lidar_measurements(detector, data, position_delta = position_delta, radius = 10, intensity=0, heigth=-0.65, current_lines=current_lines)         # All lidar points on the water surface, bounds for plotting
         
-        elif data_type == 'cam':   # [], [], [], []
+        elif data_type == 'cam':
             detections = cd.detect_trash(data, model, [0,0,0])
 
         elif data_type == 'pos':
             position_delta = np.array(data) - np.array(last_position)
             last_position = data
-            
+            track.append(last_position)
         t1_stop = process_time()
         print(data_type, ' : ', t1_stop-t1_start)
-        #t2_start = process_time() 
-        #pd.full_plotter(ax, data_type, detector, thresholded_raw, lidar_measurements, current_lines, draw_lines, camera_bounds, predictions, last_position, camera_frame=curr_cam[1]) 
-        #t2_stop = process_time()
-        #print('Plot Time usage: ', t2_stop-t2_start)
+        
         state_vector = StateVector([0,0,0,0,0,0,0,0])
         data = Detection(state_vector =state_vector, timestamp =ts, measurement_model = measurement_model)
-        plot_data = [data_type, thresholded_raw, lidar_measurements, current_lines, detections, last_position, curr_cam[1]]
+        plot_data = [data_type, thresholded_raw, lidar_measurements, current_lines, detections, track, curr_cam[1]]
         
         yield ts, data, data_type, plot_data
         
 def main():
-    start_stamp = 1675168347
+    start_stamp = 1675168337
     ts = start_stamp
     runner = run(start_stamp)
     runtime = start_stamp + int(input("Amount of seconds of runtime?"))

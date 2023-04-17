@@ -19,10 +19,10 @@ def get_relative_pos(object, obj_t = 'point', centered = False):
             y0 = (line[1] / 5)- 10
             x1 = (line[2] / 5)- 10
             y1 = (line[3] / 5) -10
-            rel_line = [(y0, y1),(x0, x1)]
+            rel_line = [(y0, x0),(y1, x1)]
 
             relative_lines.append(rel_line)           
-        return np.array(relative_lines)
+        return relative_lines
     
     return None
 
