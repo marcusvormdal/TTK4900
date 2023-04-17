@@ -22,7 +22,7 @@ def get_relative_pos(object, obj_t = 'point', centered = False):
             rel_line = [(y0, y1),(x0, x1)]
 
             relative_lines.append(rel_line)           
-        return relative_lines
+        return np.array(relative_lines)
     
     return None
 
@@ -105,3 +105,19 @@ def data_handler(curr_lidar, curr_cam, curr_pos, gen_lidar, gen_cam, gen_pos):
         curr_pos = next(gen_pos)
         
     return data_type, ts, data, curr_lidar, curr_cam, curr_pos
+
+
+def rotation_matrix(psi, theta, phi):
+    
+    R_z = np.array([[np.cos(psi), -np.sin(psi), 0],
+                  [np.sin(psi), np.cos(psi), 0],
+                  [0,0,1]])
+    R_y = np.array([[np.cos(theta),0, np.sin(theta)],
+                  [0,1,0],
+                  [-np.sin(theta),0, np.cos(theta)]])
+    R_x = np.array([[1,0,0],
+                    [0,np.cos(phi), -np.sin(phi)],
+                    [0,np.sin(phi), np.cos(phi)]])
+    R = (R_z@R_y@R_x).round(5)
+    
+    return R

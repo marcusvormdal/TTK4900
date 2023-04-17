@@ -170,14 +170,14 @@ def update_lines_pos(position_delta, lines):
                 [np.sin(-position_delta[2]), np.cos(-position_delta[2]), 0],
                 [0,0,1]])
     for l in lines:
-        #print("Before",l)
         new_line_start = (R @ np.array([l[1][0], l[1][1], 0]))[0:2] - position_delta[0:2]
         new_line_end = (R @ np.array([l[1][2], l[1][3], 0]))[0:2] - position_delta[0:2]
         l[1][0], l[1][1] = new_line_start[0], new_line_start[1]
         l[1][2], l[1][3] = new_line_end[0], new_line_end[1]
-        #print("After",l)
         updated_lines.append(l)
     return updated_lines
+
+
 
 
 

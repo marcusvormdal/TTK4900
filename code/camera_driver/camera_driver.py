@@ -22,6 +22,7 @@ def get_camera_frame(video, start_stamp, video_path):
     success = True
     for i in range(frame_num):
         success, img = video.read()
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         stamp = stamp + 0.25
         if start_stamp > stamp or not success:
             continue
@@ -50,7 +51,7 @@ def detect_trash(image, model, rot):
         world_coord = alternate_world_coord(b[0],b[1], R, [0,0,0.63])
         world_coords.append(world_coord)
         
-    return detections, boxes, world_coords
+    return [detections, world_coords, boxes]
 
 
 def calculate_angle(bbox):
