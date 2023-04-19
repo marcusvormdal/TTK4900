@@ -2,7 +2,11 @@ import numpy as np
 import velodyne_decoder as vd
 import cv2
 from PIL import Image as im
-from support_functions.support_functions import get_image_pos
+from support_functions.support_functions import get_image_pos, rotation_matrix
+from queue import PriorityQueue
+import pybst
+from sklearn.cluster import KMeans
+
 def read_pcap_data(filepath):
     config = vd.Config(model='VLP-16', rpm=600)
     cloud_arrays = []
@@ -13,8 +17,6 @@ def read_pcap_data(filepath):
     return
 
 def get_raw_lidar_data(raw_lidar_data, start_stamp):
-    start_time = raw_lidar_data[0][0]
-    frame_offset = int((start_stamp-start_time)*10)
     for frame in raw_lidar_data:
         if start_stamp > frame[0]:
             continue
@@ -27,7 +29,7 @@ def get_lidar_measurements(detector, lidar_data, position_delta, radius, intensi
     unique_points = np.unique(lidar_data, axis=0)    
     
     for point in unique_points:
-        if np.linalg.norm([point[0], point[1]])<= radius and point[2] < heigth and point[3] >= intensity: 
+        if np.linalg.norm([point[0], point[1]])<= radius and point[2] < heigth and point[3] > intensity: 
             frame_points.append(point)
             
     frame_points = np.array(frame_points)
@@ -42,7 +44,7 @@ def get_lidar_measurements(detector, lidar_data, position_delta, radius, intensi
         new_lines = detector.detect(lidar_image)
         lines = update_lines(new_lines, current_lines, position_delta)
         lidar_measurements = clean_on_line_intersect(lines, frame_points)
-    
+
     return lidar_measurements, lines, frame_points
 
 
@@ -113,9 +115,7 @@ def find_line_intersect(l1, l2, delta):
         return False                
                 
 def update_lines(lines, current_lines, position_delta):
-    
-    current_lines = update_lines_pos(position_delta, current_lines)
-    current_lines = list(current_lines)
+    current_lines[:,1] = update_lines_pos(0, current_lines[:,1], position_delta)
     current_lines = remove_outdated_lines(current_lines)
     
     if np.size(lines) > 0:
@@ -125,6 +125,7 @@ def update_lines(lines, current_lines, position_delta):
                     current_lines = [[0,l[0]]]
                 else:
                     current_lines.append([0, l[0]])
+                    
     current_lines = remove_covered_lines(current_lines)
     return np.array(current_lines, dtype=object)
 
@@ -159,25 +160,44 @@ def remove_covered_lines(lines_w_life):
                 intersect = True
                 break
         if intersect == False:
+            lines_w_life[i][0] = 0              # make overtaking line more "sticky"
             new_lines.append(lines_w_life[i])
             
     return new_lines
     
 
-def update_lines_pos(position_delta, lines):
+def update_lines_pos(rotation, lines, position_delta = []):
     updated_lines = []
-    R = np.array([[np.cos(-position_delta[2]), -np.sin(-position_delta[2]), 0],
-                [np.sin(-position_delta[2]), np.cos(-position_delta[2]), 0],
-                [0,0,1]])
+    
+    if position_delta != []:
+        R = rotation_matrix(-position_delta[2],0,0)[0:2, 0:2]
+    else:
+        R = rotation_matrix(np.radians(rotation),0,0)[0:2,0:2]
+
     for l in lines:
-        new_line_start = (R @ np.array([l[1][0], l[1][1], 0]))[0:2] - position_delta[0:2]
-        new_line_end = (R @ np.array([l[1][2], l[1][3], 0]))[0:2] - position_delta[0:2]
-        l[1][0], l[1][1] = new_line_start[0], new_line_start[1]
-        l[1][2], l[1][3] = new_line_end[0], new_line_end[1]
+        start = R @ np.array([l[0], l[1]]).T
+        end = R @ np.array([l[2], l[3]]).T
+        
+        if position_delta != []:
+            start = start - position_delta[0:2]
+            end = end - position_delta[0:2] 
+        
+        l = [start[0], start[1], end[0], end[1]]
         updated_lines.append(l)
     return updated_lines
 
+def set_lidar_offset(offset, lidar_measurements, t = []):
+    R = rotation_matrix(np.radians(offset),0,0)
+    
+    for meas in lidar_measurements:
+        meas[0:2] = R[0:2,0:2] @ meas[0:2]
+        if t != []:
+             meas[0:2] =  meas[0:2] + t
+    return lidar_measurements
 
-
-
-
+def cluster_measurements(lidar_measurements):
+    clustered_measurements = lidar_measurements
+    
+    
+    
+    return clustered_measurements

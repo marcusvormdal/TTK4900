@@ -1,11 +1,8 @@
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
-import pandas as pd 
 import ffmpeg
-from pprint import pprint
 from datetime import datetime, timedelta
-from time import process_time
+#from support_functions.support_functions import rotation_matrix
 
 def get_camera_frame(video, start_stamp, video_path):
     meta_data = ffmpeg.probe(video_path)
@@ -30,10 +27,7 @@ def get_camera_frame(video, start_stamp, video_path):
         yield [stamp, img]
 
 def detect_trash(image, model, rot):
-    t1_start = process_time() 
     predictions = model(image)
-    t1_stop = process_time()
-    print('cam processing : ', t1_stop-t1_start)
     boxes = []
     detections = []
     world_coords = []
@@ -44,13 +38,11 @@ def detect_trash(image, model, rot):
             detections.append(row)
             box = calculate_angle(row)
             boxes.append(box)
-    if np.size(detections) > 0:
-        print("Detections:", detections)
+    #if np.size(detections) > 0:
+        #print("Detections:", detections)
     for b in boxes:
-        print(b)
-        R = rotation_matrix(rot[0]+np.radians(-90), rot[1], rot[1]+np.radians(90))
-        world_coord = alternate_world_coord(b[0],b[1], R, [0,0,0.63])
-        print(world_coord)
+        R = rotation_matrix(np.radians(-90+rot[0]), rot[1], np.radians(90+rot[1]))
+        world_coord = alternate_world_coord(b[1],b[2], R, [0,0,0.63])
         world_coords.append(world_coord)
         
     return [detections, world_coords, boxes]
@@ -77,16 +69,26 @@ def get_world_coordinate(psi,theta,phi, t1,t2,t3, box_coord):
     
     world_cord = (np.linalg.inv(R) @ np.linalg.inv(i).round(5) @ hom_cord.T).round(3)
     
-    print("Wcord:",world_cord, np.arctan2(world_cord[1], world_cord[0])*180/np.pi)
+    #print("Wcord:",world_cord, np.arctan2(world_cord[1], world_cord[0])*180/np.pi)
     return world_cord
 
 def test_world_coord():
-    psi,theta,phi = np.radians(-90),0,np.radians(90)
-    box_coord  = (0,1344,1500)
+    psi,theta,phi = np.radians(-85),0,np.radians(80)
+    box_coord  = (0,131,1041)
     #world_cord = get_world_coordinate(psi, theta, phi, t1, t2, t3, box_coord)
     R = rotation_matrix(psi,theta,phi)
     world_cord_2 = alternate_world_coord(box_coord[1],box_coord[2], R, [0,0,0.63])
     
+
+def alternate_world_coord(u,v, R, t_wc):
+    theta = ((u - 1344) / 2688)*np.radians(109)
+    psi =  ((v - 760) / 1520)*np.radians(60)
+    v_c = [np.tan(theta), np.tan(psi), 1]
+    v_w = R@v_c + np.array([t_wc[0], t_wc[1], 0])
+    s = -t_wc[2] / v_w[2]
+    x_w = t_wc + s*v_w
+    return x_w.round(2)
+
 def rotation_matrix(psi, theta, phi):
     
     R_z = np.array([[np.cos(psi), -np.sin(psi), 0],
@@ -98,19 +100,23 @@ def rotation_matrix(psi, theta, phi):
     R_x = np.array([[1,0,0],
                     [0,np.cos(phi), -np.sin(phi)],
                     [0,np.sin(phi), np.cos(phi)]])
-    
     R = (R_z@R_y@R_x).round(5)
-    return R   
+    
+    return R
 
-def alternate_world_coord(u,v, R, t_wc):
-    theta = ((u - 1344) / 2688)*np.radians(109)
-    psi =  ((v - 760) / 1520)*np.radians(60)
-    v_c = [np.tan(theta), np.tan(psi), 1]
-    v_w = R@v_c + np.array([t_wc[0], t_wc[1], 0])
-    s = -t_wc[2] / v_w[2]
-    x_w = t_wc + s*v_w
-    return x_w.round(2)
+def set_cam_offset(rot, detections,t):
+    cam_measurements = []
+    R = rotation_matrix(rot,0,0)[0:2,0:2]
+    #print("det", detections[1])
+    if np.size(detections[1]) == 3:
+        for det in detections[1]:
+            #print("subdet",det)
+            
+            measure = R @ np.array([det[0],-det[1]]).T
+            measure = measure.T + t
+            cam_measurements.append(measure)
 
+    return cam_measurements
 #def __main__():
 #    test_world_coord()
     

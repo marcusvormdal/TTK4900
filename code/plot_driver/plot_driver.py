@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from support_functions.support_functions import get_relative_pos
 import cv2
 from matplotlib.animation import FuncAnimation
 import matplotlib as lib
@@ -18,42 +17,54 @@ ax3 = fig.add_subplot(gs[1, :])
 ln1_1 = ax1.add_collection(LineCollection([], lw=2))
 ln1_2 = ax1.scatter(x, y, marker='o', color='blue', linewidths=1)
 ln2, = ax2.plot([], [], color='green', marker='o', linestyle='dashed', linewidth=0.5, markersize=0.5)
+ln2_2, = ax2.plot([], [], color='red', marker='o', linestyle='dashed', linewidth=0.5, markersize=2)
 ln3 = ax3.imshow(a)
 
-ax1.set_xlabel('X Label')
-ax1.set_ylabel('Y Label')
+ax1.set_xlabel('Y axis')
+ax1.set_ylabel('X axis')
 ax1.set_title('Lidar data')
 ax1.set_xlim([-10, 10])
 ax1.set_ylim([-10, 10])
-ax2.set_title('Current camera frame')
-ax2.set_xlim(-10, 10)
-ax2.set_ylim(-10, 10)
+ax2.set_title('NED track')
+ax2.set_xlim([-5, 5])
+ax2.set_ylim([-5, 5])
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax3.set_title('Current camera frame')
     
 def update(frame):
-    print(frame)
-    data_type, raw_lidar_data, lidar_measurements, lidar_bounds, detections, pos_track, camera_frame = frame
+    data_type, raw_lidar_data, lidar_measurements, lidar_bounds, detections, pos_track, camera_frame, bang = frame
                  
     if data_type == 'lid':
-        relative_lines = []
-    
         if np.size(lidar_bounds) != 0:
+
+            lidar_bounds = lidar_bounds[:,1]
+            plot_l = []
+            for l in lidar_bounds:
+                plot_l.append([(l[0], l[1]),(l[2], l[3])])
             
-            relative_lines = get_relative_pos(lidar_bounds[:,1], 'line')
-            ln1_1.set_segments(relative_lines)
-            
-        #if np.size(raw_lidar_data) != 0:
-        #    raw_lidar_data = np.array(raw_lidar_data)
-        #    ax.scatter(raw_lidar_data[:,0], raw_lidar_data[:,1], 
-        #                marker='x', color='red', linewidths=1)
-        
+            ln1_1.set_segments(plot_l)
+        '''
+        if np.size(raw_lidar_data) != 0:
+            shape = (np.size(raw_lidar_data[:,1]),1)
+        if np.size(raw_lidar_data) == 1:
+            data = np.hstack((-raw_lidar_data[1], raw_lidar_data[0]))
+            ln1_2.set_offsets(data)
+        else:
+            data = np.hstack((np.reshape(-raw_lidar_data[:,1], shape), np.reshape(raw_lidar_data[:,0], shape)))
+
+            ln1_2.set_offsets(data)
+        '''
+
         if np.size(lidar_measurements) != 0:
+            shape = (np.size(lidar_measurements[:,1]),1)
             if np.size(lidar_measurements) == 1:
-                ln1_2.set_offsets([lidar_measurements[1], -lidar_measurements[0]])
+                data = np.hstack((-lidar_measurements[1], lidar_measurements[0]))
+                ln1_2.set_offsets(data)
             else:
-                ln1_2.set_offsets([lidar_measurements[:,1], -lidar_measurements[:,0]])
+                data = np.hstack((-np.reshape(lidar_measurements[:,1], shape), np.reshape(lidar_measurements[:,0], shape)))
+
+                ln1_2.set_offsets(data)
 
     if data_type == 'cam':
         for box in detections[2]:
@@ -66,11 +77,15 @@ def update(frame):
         
         imS = cv2.resize(camera_frame, (1920, 1080))             
         ln3.set_array(imS)
-        
+
+
     else:
-        ln2.set_data(pos_track[0], pos_track[1])
-        
-    return ln1_1, ln1_2, ln2, ln3,
+        pos_track = np.array(pos_track)
+        ln2.set_data(pos_track[:,0], pos_track[:,1])
+        if bang != []:
+            bang = np.array(bang)
+            ln2_2.set_data(bang[:,0], bang[:,1])
+    return ln1_1, ln1_2, ln2, ln3, ln2_2,
     
 def plot_lsd(ax, detector, lidar_bounds):
     if np.size(lidar_bounds)!= 0 :
