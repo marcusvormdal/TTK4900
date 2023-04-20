@@ -106,17 +106,14 @@ def rotation_matrix(psi, theta, phi):
 
 def set_cam_offset(rot, detections,t):
     cam_measurements = []
-    R = rotation_matrix(rot,0,0)[0:2,0:2]
-    #print("det", detections[1])
-    if np.size(detections[1]) == 3:
-        for det in detections[1]:
-            #print("subdet",det)
-            
+    R = rotation_matrix(np.radians(rot),0,0)[0:2,0:2]
+    if np.size(detections[1]) !=[]:
+        for det in detections[1]:       
             measure = R @ np.array([det[0],-det[1]]).T
             measure = measure.T + t
             cam_measurements.append(measure)
-
     return cam_measurements
+
 #def __main__():
 #    test_world_coord()
     

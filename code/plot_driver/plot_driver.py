@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 import matplotlib as lib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -17,7 +17,7 @@ ax3 = fig.add_subplot(gs[1, :])
 ln1_1 = ax1.add_collection(LineCollection([], lw=2))
 ln1_2 = ax1.scatter(x, y, marker='o', color='blue', linewidths=1)
 ln2, = ax2.plot([], [], color='green', marker='o', linestyle='dashed', linewidth=0.5, markersize=0.5)
-ln2_2, = ax2.plot([], [], color='red', marker='o', linestyle='dashed', linewidth=0.5, markersize=2)
+ln2_2 = ax2.scatter(100, 100, marker='x', color='red', linewidths=2)
 ln3 = ax3.imshow(a)
 
 ax1.set_xlabel('Y axis')
@@ -26,14 +26,14 @@ ax1.set_title('Lidar data')
 ax1.set_xlim([-10, 10])
 ax1.set_ylim([-10, 10])
 ax2.set_title('NED track')
-ax2.set_xlim([-5, 5])
-ax2.set_ylim([-5, 5])
+ax2.set_xlim([-15, 15])
+ax2.set_ylim([-15, 15])
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax3.set_title('Current camera frame')
     
 def update(frame):
-    data_type, raw_lidar_data, lidar_measurements, lidar_bounds, detections, pos_track, camera_frame, bang = frame
+    data_type, raw_lidar_data, lidar_measurements, lidar_bounds, detections, pos_track, camera_frame, ned_track = frame
                  
     if data_type == 'lid':
         if np.size(lidar_bounds) != 0:
@@ -62,9 +62,8 @@ def update(frame):
                 data = np.hstack((-lidar_measurements[1], lidar_measurements[0]))
                 ln1_2.set_offsets(data)
             else:
-                data = np.hstack((-np.reshape(lidar_measurements[:,1], shape), np.reshape(lidar_measurements[:,0], shape)))
-
-                ln1_2.set_offsets(data)
+                lid_data = np.hstack((-np.reshape(lidar_measurements[:,1], shape), np.reshape(lidar_measurements[:,0], shape)))
+                ln1_2.set_offsets(lid_data)
 
     if data_type == 'cam':
         for box in detections[2]:
@@ -82,9 +81,12 @@ def update(frame):
     else:
         pos_track = np.array(pos_track)
         ln2.set_data(pos_track[:,0], pos_track[:,1])
-        if bang != []:
-            bang = np.array(bang)
-            ln2_2.set_data(bang[:,0], bang[:,1])
+        if ned_track != []:
+            ned_track = np.array(ned_track)
+            shape = (np.size(ned_track[:,1]),1)
+            cam_data = np.hstack((np.reshape(ned_track[:,0], shape),np.reshape(ned_track[:,1], shape)))
+            ln2_2.set_offsets(cam_data)
+            
     return ln1_1, ln1_2, ln2, ln3, ln2_2,
     
 def plot_lsd(ax, detector, lidar_bounds):
@@ -96,6 +98,9 @@ def plot_lsd(ax, detector, lidar_bounds):
 
 def animate(animation_data):
 
-    ani = FuncAnimation(fig, update, frames = animation_data, blit = True, interval = 1, repeat = True)
+    ani = FuncAnimation(fig, update, frames = animation_data, blit = True, interval = 100, repeat = True, save_count=2000)
+    writervideo = FFMpegWriter(fps=20) 
+
+    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/first_working_file.mp4', writervideo)
     
-    plt.show()
+    #plt.show()

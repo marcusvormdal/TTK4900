@@ -170,7 +170,7 @@ def update_lines_pos(rotation, lines, position_delta = []):
     updated_lines = []
     
     if position_delta != []:
-        R = rotation_matrix(-position_delta[2],0,0)[0:2, 0:2]
+        R = rotation_matrix(-np.radians(position_delta[2]),0,0)[0:2, 0:2]
     else:
         R = rotation_matrix(np.radians(rotation),0,0)[0:2,0:2]
 
@@ -198,6 +198,8 @@ def set_lidar_offset(offset, lidar_measurements, t = []):
 def cluster_measurements(lidar_measurements):
     clustered_measurements = lidar_measurements
     
-    
+    #kmeans = KMeans(n_clusters=5, random_state=0, init= "k-means++",n_init="auto").fit(lidar_measurements[:,0:2])
+    #print(kmeans.cluster_centers_)
+    #print(kmeans.labels_)
     
     return clustered_measurements
