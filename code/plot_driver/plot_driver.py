@@ -18,6 +18,8 @@ ln1_1 = ax1.add_collection(LineCollection([], lw=2))
 ln1_2 = ax1.scatter(x, y, marker='o', color='blue', linewidths=1)
 ln2, = ax2.plot([], [], color='green', marker='o', linestyle='dashed', linewidth=0.5, markersize=0.5)
 ln2_2 = ax2.scatter(100, 100, marker='x', color='red', linewidths=2)
+ln2_3 = ax2.scatter(100, 100, marker='*', color='blue', linewidths=0.3)
+
 ln3 = ax3.imshow(a)
 
 ax1.set_xlabel('Y axis')
@@ -82,12 +84,29 @@ def update(frame):
         pos_track = np.array(pos_track)
         ln2.set_data(pos_track[:,0], pos_track[:,1])
         if ned_track != []:
-            ned_track = np.array(ned_track)
-            shape = (np.size(ned_track[:,1]),1)
-            cam_data = np.hstack((np.reshape(ned_track[:,0], shape),np.reshape(ned_track[:,1], shape)))
+            ned_track_lid_x = np.array([])
+            ned_track_lid_y = np.array([])
+            ned_track_cam_x = np.array([])
+            ned_track_cam_y = np.array([])
+            for meas in ned_track:
+                if meas[1] == 'lid':
+                    ned_track_lid_x = np.append(ned_track_lid_x, meas[0][0])
+                    ned_track_lid_y = np.append(ned_track_lid_y, meas[0][1])
+                elif meas[1] == 'cam':
+                    ned_track_cam_x = np.append(ned_track_cam_x, meas[0][0])
+                    ned_track_cam_y = np.append(ned_track_cam_y, meas[0][1])
+
+            ned_track_lid_x = np.reshape(ned_track_lid_x, (np.size(ned_track_lid_x),1))
+            ned_track_lid_y = np.reshape(ned_track_lid_y, (np.size(ned_track_lid_y),1))
+            ned_track_cam_x = np.reshape(ned_track_cam_x, (np.size(ned_track_cam_x),1))
+            ned_track_cam_y = np.reshape(ned_track_cam_y, (np.size(ned_track_cam_y),1))
+            lid_data = np.hstack((ned_track_lid_x, ned_track_lid_y))
+            cam_data = np.hstack((ned_track_cam_x, ned_track_cam_y))
+            
+            ln2_3.set_offsets(lid_data)
             ln2_2.set_offsets(cam_data)
             
-    return ln1_1, ln1_2, ln2, ln3, ln2_2,
+    return ln1_1, ln1_2, ln2, ln3, ln2_2, ln2_3,
     
 def plot_lsd(ax, detector, lidar_bounds):
     if np.size(lidar_bounds)!= 0 :
@@ -101,6 +120,6 @@ def animate(animation_data):
     ani = FuncAnimation(fig, update, frames = animation_data, blit = True, interval = 100, repeat = True, save_count=2000)
     writervideo = FFMpegWriter(fps=20) 
 
-    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/first_working_file.mp4', writervideo)
+    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/clustering.mp4', writervideo)
     
     #plt.show()

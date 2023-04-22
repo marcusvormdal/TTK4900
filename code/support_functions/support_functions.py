@@ -54,7 +54,7 @@ def get_position(data_stream, date, start_stamp):
             j, found = 1, False
             while frames[i+j][1:6] != 'GPGGA' and j < 10 and found == False:
                 if frames[i+j][1:6] == 'GPHDT':
-                    heading= int(float(frames[i+j].split(',')[1]))
+                    heading=float(frames[i+j].split(',')[1])
                     found = True
                 j += j
             curr_time = datetime.strptime(time, "%H%M%S%f")

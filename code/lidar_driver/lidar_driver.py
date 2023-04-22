@@ -188,7 +188,6 @@ def update_lines_pos(rotation, lines, position_delta = []):
 
 def set_lidar_offset(offset, lidar_measurements, t = []):
     R = rotation_matrix(np.radians(offset),0,0)
-    
     for meas in lidar_measurements:
         meas[0:2] = R[0:2,0:2] @ meas[0:2]
         if t != []:

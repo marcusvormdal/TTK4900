@@ -79,9 +79,13 @@ def run(start_stamp):
             current_lines[:,1] = sf.get_relative_pos(current_lines[:,1], 'line')
             current_lines[:,1] = ld.update_lines_pos(7, current_lines[:,1])
             lidar_measurements = ld.cluster_measurements(lidar_measurements)
-            lm_plot = ld.set_lidar_offset(7, np.copy(lidar_measurements))
-            data = ld.set_lidar_offset(last_position[2]-38, np.copy(lidar_measurements), t = [0.0+last_position[0],0.0+last_position[1]])
-
+            lm_plot = ld.set_lidar_offset(5, np.copy(lidar_measurements))
+            data = ld.set_lidar_offset(last_position[2], np.copy(lidar_measurements), t = [0.0+last_position[0],0.0+last_position[1]])
+            try:
+                for meas in data[:,0:2]:
+                    ned_track.append([meas,'lid'])
+            except:
+                pass  
         elif data_type == 'cam':
             detections = cd.detect_trash(data, model, [5,0,-10]) #last_position[2]
             data = cd.set_cam_offset(last_position[2], detections,[0.10+last_position[0],0.0+last_position[1]])
@@ -89,7 +93,11 @@ def run(start_stamp):
             #print(last_position[2])
             #print(data)
             if data != []:
-                ned_track = ned_track + data
+                try:
+                    for meas in data:
+                        ned_track.append([meas,'cam'])
+                except:
+                    pass
         elif data_type == 'pos':
             position_delta = np.array(data) - np.array(last_position)
             last_position = data
@@ -103,7 +111,7 @@ def run(start_stamp):
         state_vector = StateVector([0,0,0,0,0,0,0,0])
         tracker_data = Detection(state_vector =state_vector, timestamp =ts, measurement_model = measurement_model)
         
-        plot_data = [data_type, thresholded_raw, lm_plot,current_lines, detections, curr_track, curr_cam[1], ned_track]
+        plot_data = [data_type, thresholded_raw, lm_plot,current_lines, detections, curr_track, curr_cam[1], np.copy(ned_track)]
         
         yield ts, tracker_data, data_type, plot_data
         
