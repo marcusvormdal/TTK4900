@@ -33,7 +33,7 @@ def detect_trash(image, model, rot):
     world_coords = []
     for row in predictions.pandas().xyxy[0].itertuples():
         if row.confidence > 0.35 and row.ymin > 725 and row.ymax > 725:
-            if (row.ymin > 1200 or row.ymax > 1200) and (row.xmin > 700 or row.xmax > 700) and (row.xmin < 2100 or row.xmax < 2100):  # filter boat front
+            if (row.ymin > 1200 or row.ymax > 1200) and (row.xmin > 630 or row.xmax > 630) and (row.xmin < 2050 or row.xmax < 2050):  # filter boat front
                 continue
             detections.append(row)
             box = calculate_angle(row)

@@ -40,6 +40,8 @@ def run(start_stamp):
     position_delta = [0,0,0]
     lm_plot = []
     ned_track = []
+    lidar_buffer = []
+    buffer_index = 0
     # Initiate LSD
     detector = cv2.createLineSegmentDetector(0)
 
@@ -78,20 +80,23 @@ def run(start_stamp):
            
             current_lines[:,1] = sf.get_relative_pos(current_lines[:,1], 'line')
             current_lines[:,1] = ld.update_lines_pos(7, current_lines[:,1])
-            lidar_measurements = ld.cluster_measurements(lidar_measurements)
-            lm_plot = ld.set_lidar_offset(5, np.copy(lidar_measurements))
+            lm_plot = ld.set_lidar_offset(0, np.copy(lidar_measurements))
             data = ld.set_lidar_offset(last_position[2], np.copy(lidar_measurements), t = [0.0+last_position[0],0.0+last_position[1]])
-            try:
-                for meas in data[:,0:2]:
-                    ned_track.append([meas,'lid'])
-            except:
-                pass  
+            if np.size(data) != 0:
+                for meas in data:
+                    lidar_buffer.append(meas)
+                    
+            if buffer_index == 3:  # Buffer lidar measurements and cluster after
+                clustered = ld.cluster_measurements(lidar_buffer)        
+                for c in clustered:
+                    ned_track.append([c, 'lid'])
+                lidar_buffer = []
+                buffer_index = -1
+                
+            buffer_index += 1
         elif data_type == 'cam':
             detections = cd.detect_trash(data, model, [5,0,-10]) #last_position[2]
             data = cd.set_cam_offset(last_position[2], detections,[0.10+last_position[0],0.0+last_position[1]])
-            #print(detections)
-            #print(last_position[2])
-            #print(data)
             if data != []:
                 try:
                     for meas in data:
@@ -101,6 +106,7 @@ def run(start_stamp):
         elif data_type == 'pos':
             position_delta = np.array(data) - np.array(last_position)
             last_position = data
+            print("current pos", last_position[2])
             track.append(last_position)
             curr_track = np.copy(track)
             

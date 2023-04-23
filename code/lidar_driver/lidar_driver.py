@@ -5,7 +5,7 @@ from PIL import Image as im
 from support_functions.support_functions import get_image_pos, rotation_matrix
 from queue import PriorityQueue
 import pybst
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, MeanShift
 
 def read_pcap_data(filepath):
     config = vd.Config(model='VLP-16', rpm=600)
@@ -195,10 +195,17 @@ def set_lidar_offset(offset, lidar_measurements, t = []):
     return lidar_measurements
 
 def cluster_measurements(lidar_measurements):
-    clustered_measurements = lidar_measurements
-    
-    #kmeans = KMeans(n_clusters=5, random_state=0, init= "k-means++",n_init="auto").fit(lidar_measurements[:,0:2])
-    #print(kmeans.cluster_centers_)
-    #print(kmeans.labels_)
-    
-    return clustered_measurements
+    if np.size(lidar_measurements) == 0:
+        return lidar_measurements
+    meanshift = MeanShift(bandwidth=2, cluster_all = False).fit(np.array(lidar_measurements)[:,0:2])
+    #print("bef", np.array(lidar_measurements)[:,0:2])
+    clustered_measurements = meanshift.cluster_centers_
+    filtered_measurements = []
+    #print("aft", clustered_measurements)
+    for l in np.unique(meanshift.labels_):
+        num_measurements = np.count_nonzero((meanshift.labels_ == l).astype(int))
+        if num_measurements > 15:
+            filtered_measurements.append(clustered_measurements[l])
+    #print("filt", filtered_measurements)
+
+    return filtered_measurements
