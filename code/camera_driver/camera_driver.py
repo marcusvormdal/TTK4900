@@ -13,13 +13,12 @@ def get_camera_frame(video, start_stamp, video_path):
     s = timedelta(seconds=(int(float(duration)%60)+3))
     start_time = end_time - m - s
     stamp = datetime.timestamp(start_time) - 0.25 
-    video_offset = int((start_stamp - stamp) * 4 - 15)
-    stamp = stamp + int(start_stamp - stamp) -15
+    video_offset = int((start_stamp - stamp) * 4 - 30*4)
+    stamp = stamp + int(start_stamp - stamp) -30
     video.set(cv2.CAP_PROP_POS_FRAMES, video_offset)
     success = True
     for i in range(frame_num):
         success, img = video.read()
-        
         stamp = stamp + 0.25
         if start_stamp > stamp or not success:
             continue
@@ -28,16 +27,16 @@ def get_camera_frame(video, start_stamp, video_path):
         yield [stamp, img]
 
 def detect_trash(image, model, rot):
-    image_res = cv2.resize(image, (640, 480))       
+    image_res = cv2.resize(image, (672, 380))       
     predictions = model(image_res)
     boxes = []
     detections = []
     world_coords = []
     for row in predictions.pandas().xyxy[0].itertuples():
-        ymin, ymax = int(row.ymin *3.17), int(row.ymax *3.17)
-        xmin, xmax = int(row.xmin *4.2), int(row.xmax *4.2)
+        ymin, ymax = int(row.ymin *4), int(row.ymax *4)
+        xmin, xmax = int(row.xmin *4), int(row.xmax *4)
         if row.confidence > 0.35 and ymin > 725 and ymax > 725:
-            if (ymin > 1200 or ymax > 1200) and (xmin > 630 or xmax > 630) and (xmin < 2050 or xmax < 2050):  # filter boat front
+            if (ymin > 1200 or ymax > 1200) and (xmin > 615 or xmax > 615) and (xmin < 2050 or xmax < 2050):  # filter boat front
                 continue
             if (ymin > 1490 or ymax > 1490) and (xmin > 2550 or xmax > 2550):  # filter boat front
                 continue
@@ -47,7 +46,7 @@ def detect_trash(image, model, rot):
     #if np.size(detections) > 0:
         #print("Detections:", detections)
     for b in boxes:
-        R = rotation_matrix(np.radians(-90+rot[0]), rot[1], np.radians(90+rot[1]))
+        R = rotation_matrix(np.radians(-90+rot[0]), rot[1], np.radians(90+rot[2]))
         world_coord = alternate_world_coord(b[1],b[2], R, [0,0,0.63])
         world_coords.append(world_coord)
         
@@ -115,7 +114,7 @@ def set_cam_offset(rot, detections,t):
     R = rotation_matrix(np.radians(rot),0,0)[0:2,0:2]
     if np.size(detections[1]) !=[]:
         for det in detections[1]:       
-            measure = R @ np.array([det[0],-det[1]]).T
+            measure = R @ np.array([det[0],det[1]]).T
             measure = measure.T + t
             cam_measurements.append(measure)
     return cam_measurements

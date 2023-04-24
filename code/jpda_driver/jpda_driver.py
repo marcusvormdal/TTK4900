@@ -19,7 +19,7 @@ from stonesoup.deleter.time import UpdateTimeStepsDeleter
 transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(0.005),
                                                           ConstantVelocity(0.005)])
 measurement_model = LinearGaussian(
-    ndim_state=6, mapping=[0, 2, 4], noise_covar=np.diag([1**2, 1**2, 1**2]))
+    ndim_state=4, mapping=[0,1,2,3], noise_covar=np.diag([1**2, 1**2, 1**2, 1**2]))
 
 predictor = KalmanPredictor(transition_model)
 updater = KalmanUpdater(measurement_model)
@@ -31,12 +31,11 @@ hypothesiser = PDAHypothesiser(predictor=predictor,
 
 data_associator = JPDA(hypothesiser=hypothesiser)
 
-#deleter = CovarianceBasedDeleter(covar_trace_thresh=4)
 deleter_init = UpdateTimeStepsDeleter(time_steps_since_update=3)
 deleter = UpdateTimeStepsDeleter(time_steps_since_update=15)
 
-prior_state=GaussianState(StateVector(np.zeros((6,1))),
-                            CovarianceMatrix(np.diag([100**2, 30**2, 100**2, 30**2, 100**2, 100**2])))
+prior_state=GaussianState(StateVector(np.zeros((4,1))),
+                            CovarianceMatrix(np.diag([100**2, 30**2, 100**2, 30**2])))
 
 initiator = MultiMeasurementInitiator(
     prior_state,
@@ -46,7 +45,6 @@ initiator = MultiMeasurementInitiator(
     updater=updater,
     min_points=2,
     )
-
 
 
 tracks, all_tracks = set(), set()

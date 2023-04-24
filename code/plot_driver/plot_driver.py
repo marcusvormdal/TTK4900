@@ -28,8 +28,8 @@ ax1.set_title('Lidar data')
 ax1.set_xlim([-10, 10])
 ax1.set_ylim([-10, 10])
 ax2.set_title('NED track')
-ax2.set_xlim([-20, 20])
-ax2.set_ylim([-20, 20])
+ax2.set_xlim([-40, 40])
+ax2.set_ylim([-40, 40])
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax3.set_title('Current camera frame')
@@ -82,7 +82,7 @@ def update(frame):
 
     else:
         pos_track = np.array(pos_track) 
-        ln2.set_data(pos_track[:,0], pos_track[:,1])
+        ln2.set_data(pos_track[:,1], pos_track[:,0])
         if ned_track != []:
             ned_track_lid_x = np.array([])
             ned_track_lid_y = np.array([])
@@ -100,8 +100,8 @@ def update(frame):
             ned_track_lid_y = np.reshape(ned_track_lid_y, (np.size(ned_track_lid_y),1))
             ned_track_cam_x = np.reshape(ned_track_cam_x, (np.size(ned_track_cam_x),1))
             ned_track_cam_y = np.reshape(ned_track_cam_y, (np.size(ned_track_cam_y),1))
-            lid_data = np.hstack((ned_track_lid_x, ned_track_lid_y))
-            cam_data = np.hstack((ned_track_cam_x, ned_track_cam_y))
+            lid_data = np.hstack((ned_track_lid_y, ned_track_lid_x))
+            cam_data = np.hstack((ned_track_cam_y, ned_track_cam_x))
             
             ln2_3.set_offsets(lid_data)
             ln2_2.set_offsets(cam_data)
@@ -120,6 +120,6 @@ def animate(animation_data):
     ani = FuncAnimation(fig, update, frames = animation_data, blit = True, interval = 100, repeat = True, save_count=2000)
     writervideo = FFMpegWriter(fps=25) 
 
-    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/clustering_w_yolo7_long.mp4', writervideo)
+    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/clustering_w_yolo7_long_4.mp4', writervideo)
     
     #plt.show()
