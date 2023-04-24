@@ -115,8 +115,9 @@ def find_line_intersect(l1, l2, delta):
         return False                
                 
 def update_lines(lines, current_lines, position_delta):
-    current_lines[:,1] = update_lines_pos(0, current_lines[:,1], position_delta)
-    current_lines = remove_outdated_lines(current_lines)
+    if np.size(current_lines) != 0:
+        current_lines[:,1] = update_lines_pos(0, current_lines[:,1], position_delta)
+        current_lines = remove_outdated_lines(current_lines)
     
     if np.size(lines) > 0:
         if type(lines[0]) == np.ndarray:
@@ -138,7 +139,7 @@ def remove_outdated_lines(lines):
     return updated_lines
 
 def remove_covered_lines(lines_w_life):
-    if lines_w_life == []:
+    if np.size(lines_w_life) == 0:
         return lines_w_life
     lines = np.array(lines_w_life)[:,1]
     ep_lines = []

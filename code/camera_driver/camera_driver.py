@@ -19,24 +19,30 @@ def get_camera_frame(video, start_stamp, video_path):
     success = True
     for i in range(frame_num):
         success, img = video.read()
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
         stamp = stamp + 0.25
         if start_stamp > stamp or not success:
             continue
-        img = cv2.convertScaleAbs(img, alpha=1.7, beta=0)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        #img = cv2.convertScaleAbs(img, alpha=1.7, beta=0)
         yield [stamp, img]
 
 def detect_trash(image, model, rot):
-    predictions = model(image)
+    image_res = cv2.resize(image, (640, 480))       
+    predictions = model(image_res)
     boxes = []
     detections = []
     world_coords = []
     for row in predictions.pandas().xyxy[0].itertuples():
-        if row.confidence > 0.35 and row.ymin > 725 and row.ymax > 725:
-            if (row.ymin > 1200 or row.ymax > 1200) and (row.xmin > 630 or row.xmax > 630) and (row.xmin < 2050 or row.xmax < 2050):  # filter boat front
+        ymin, ymax = int(row.ymin *3.17), int(row.ymax *3.17)
+        xmin, xmax = int(row.xmin *4.2), int(row.xmax *4.2)
+        if row.confidence > 0.35 and ymin > 725 and ymax > 725:
+            if (ymin > 1200 or ymax > 1200) and (xmin > 630 or xmax > 630) and (xmin < 2050 or xmax < 2050):  # filter boat front
                 continue
-            detections.append(row)
-            box = calculate_angle(row)
+            if (ymin > 1490 or ymax > 1490) and (xmin > 2550 or xmax > 2550):  # filter boat front
+                continue
+            detections.append([xmin, ymin,xmax, ymax])
+            box = calculate_angle(ymax, xmin, xmax)
             boxes.append(box)
     #if np.size(detections) > 0:
         #print("Detections:", detections)
@@ -48,9 +54,9 @@ def detect_trash(image, model, rot):
     return [detections, world_coords, boxes]
 
 
-def calculate_angle(bbox):
+def calculate_angle(ymax, xmin, xmax):
     """Assumes plane on water level"""
-    obj_point = ((bbox.xmax+bbox.xmin)/2, bbox.ymax)  # ymax to do bottom detection
+    obj_point = ((xmax+xmin)/2, ymax)  # ymax to do bottom detection
     box_data = (np.arctan2(1520-obj_point[1], obj_point[0]-1344)*180/np.pi-90, obj_point[0], obj_point[1])
     #print(box_data)
     return box_data

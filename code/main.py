@@ -10,13 +10,15 @@ from stonesoup.types.track import Track
 from stonesoup.plotter import Plotterly
 from stonesoup.types.detection import Detection
 from stonesoup.models.measurement.linear import LinearGaussian
-
+from stonesoup.reader.base import DetectionReader
 import lidar_driver.lidar_driver as ld
 import camera_driver.camera_driver as cd
 import jpda_driver.jpda_driver as jd
 import support_functions.support_functions as sf
 import plot_driver.plot_driver as pd
 
+import warnings
+warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) # This is a band-aid solution
 def run(start_stamp):
     # Control variables
     use_capture = True
@@ -52,7 +54,8 @@ def run(start_stamp):
         # load data
         raw_lidar_data = np.load('./lidar_driver/lidar_trash_point_array.npy', allow_pickle=True)
         video = cv2.VideoCapture(video_path)
-        model = torch.hub.load('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolov5', 'custom', path ='C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/pLitterFloat_800x752_to_640x640.pt', source='local', force_reload=True)
+        model = torch.hub.load('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolov7', 'custom', path_or_model = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolo7.pt', source='local')
+        #model = torch.hub.load('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolov7', 'custom', path ='C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolo7_light.pt', source='local', force_reload=False)
         pos_stream = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/testrecord.txt'
         gps_date = sf.get_gps_date_ts(pos_stream)  # Need to resolve once
 
@@ -73,13 +76,14 @@ def run(start_stamp):
                                    noise_covar=np.diag([1**2, 1**2, 1**2, 1**2]))
     while(True):
         t1_start = process_time() 
+        tracker_data = set()
         data_type, ts, data, curr_lidar, curr_cam, curr_pos = sf.data_handler(curr_lidar, curr_cam, curr_pos, lidar_generator, camera_generator, pos_generator)
         
         if data_type == 'lid':
             lidar_measurements, current_lines, thresholded_raw = ld.get_lidar_measurements(detector, data, position_delta = position_delta, radius = 10, intensity=0, heigth=-0.80, current_lines=current_lines)         # All lidar points on the water surface, bounds for plotting
-           
-            current_lines[:,1] = sf.get_relative_pos(current_lines[:,1], 'line')
-            current_lines[:,1] = ld.update_lines_pos(7, current_lines[:,1])
+            if np.size(current_lines) != 0:
+                current_lines[:,1] = sf.get_relative_pos(current_lines[:,1], 'line')
+                current_lines[:,1] = ld.update_lines_pos(7, current_lines[:,1])
             lm_plot = ld.set_lidar_offset(0, np.copy(lidar_measurements))
             data = ld.set_lidar_offset(last_position[2], np.copy(lidar_measurements), t = [0.0+last_position[0],0.0+last_position[1]])
             if np.size(data) != 0:
@@ -91,55 +95,66 @@ def run(start_stamp):
                 for c in clustered:
                     ned_track.append([c, 'lid'])
                 lidar_buffer = []
-                buffer_index = -1
-                
-            buffer_index += 1
+                buffer_index = 0
+                for meas in data:
+                    tracker_data.add(Detection(state_vector =StateVector([0,0,meas[0],meas[1],0,0]), timestamp =ts, measurement_model = measurement_model))
+            else:
+                buffer_index += 1
+                t1_stop = process_time()
+                print(data_type, ' : ', t1_stop-t1_start, ' : ', ts)
+                continue
+            
         elif data_type == 'cam':
             detections = cd.detect_trash(data, model, [5,0,-10]) #last_position[2]
             data = cd.set_cam_offset(last_position[2], detections,[0.10+last_position[0],0.0+last_position[1]])
-            if data != []:
-                try:
-                    for meas in data:
-                        ned_track.append([meas,'cam'])
-                except:
-                    pass
+            if np.size(data) != 0:
+                for meas in data:
+                    ned_track.append([meas,'cam'])
+                    tracker_data.add(Detection(state_vector = StateVector([0,0,0,0,meas[0],meas[1]]), timestamp =ts, measurement_model = measurement_model))
+
         elif data_type == 'pos':
             position_delta = np.array(data) - np.array(last_position)
             last_position = data
-            print("current pos", last_position[2])
+            #print("current pos", last_position[2])
             track.append(last_position)
             curr_track = np.copy(track)
-            
+            tracker_data.add(Detection(state_vector = StateVector([last_position[0],last_position[1],0,0,0,0]), timestamp =ts, measurement_model = measurement_model))
+
         t1_stop = process_time()
         
         print(data_type, ' : ', t1_stop-t1_start, ' : ', ts)
         
-        state_vector = StateVector([0,0,0,0,0,0,0,0])
-        tracker_data = Detection(state_vector =state_vector, timestamp =ts, measurement_model = measurement_model)
-        
         plot_data = [data_type, thresholded_raw, lm_plot,current_lines, detections, curr_track, curr_cam[1], np.copy(ned_track)]
         
         yield ts, tracker_data, data_type, plot_data
+
+def detector_wrapper(gen):
+    for ts, tracker_data, _, _ in gen:
+        #print(ts, tracker_data)
+        yield ts, tracker_data
         
 def main():
-    start_stamp = 1675168347
+    start_stamp = 1675168530 #1675168352
     ts = start_stamp
     runner = run(start_stamp)
     runtime = start_stamp + int(input("Runtime (s): "))
     animation_data = []
-    
+    jpda = False
+    tracks = set()
     while runtime > ts:
-        ts, data, data_type, plot_data = next(runner)
-        animation_data.append(plot_data)
-        
-    #tracker = jd.track(runner)
-    #for timestamp, tracks in tracker:
-    #    print(timestamp)
-    #    print(tracks)
-    #while True:
-        #data_type = next(runner)
-        
-    pd.animate(animation_data)     
-    
+        if jpda == False:
+            ts, data, data_type, plot_data = next(runner)
+            animation_data.append(plot_data)
+        else:
+            tracker = jd.track(detector_wrapper(runner))
+            for _, ctracks in tracker:
+                tracks.update(ctracks)
+
+    if jpda == False:
+        pd.animate(animation_data)     
+    else:  
+        plotter = Plotterly()
+        plotter.plot_tracks(tracks, [0, 2], uncertainty=True)
+        plotter.fig 
 main()  
     

@@ -72,16 +72,16 @@ def update(frame):
             cv2.line(camera_frame, (1344, 1520), (int(box[1]), int(box[2])), (0, 255, 0), 2)
             
         for i,row in enumerate(detections[0]):
-            cv2.rectangle(camera_frame, (int(row.xmin), int(row.ymin)), (int(row.xmax), int(row.ymax)), (0, 0, 255), 2)
+            cv2.rectangle(camera_frame, (int(row[0]), int(row[1])), (int(row[2]), int(row[3])), (0, 0, 255), 2)
             pos_str = "x : " + str(detections[1][i][0]) +" , y : " +  str(detections[1][i][1])
-            cv2.putText(camera_frame, pos_str, (int(row.xmin), int(row.ymin)-15),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(camera_frame, pos_str, (int(row[0]), int(row[1])-15),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         
         imS = cv2.resize(camera_frame, (1920, 1080))             
-        ln3.set_array(imS)
+        ln3.set_array(camera_frame)
 
 
     else:
-        pos_track = np.array(pos_track)
+        pos_track = np.array(pos_track) 
         ln2.set_data(pos_track[:,0], pos_track[:,1])
         if ned_track != []:
             ned_track_lid_x = np.array([])
@@ -118,8 +118,8 @@ def plot_lsd(ax, detector, lidar_bounds):
 def animate(animation_data):
 
     ani = FuncAnimation(fig, update, frames = animation_data, blit = True, interval = 100, repeat = True, save_count=2000)
-    writervideo = FFMpegWriter(fps=20) 
+    writervideo = FFMpegWriter(fps=25) 
 
-    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/clustering.mp4', writervideo)
+    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/clustering_w_yolo7_long.mp4', writervideo)
     
     #plt.show()

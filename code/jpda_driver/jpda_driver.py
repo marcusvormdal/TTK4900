@@ -17,12 +17,9 @@ from stonesoup.types.array import CovarianceMatrix, StateVector
 from stonesoup.deleter.time import UpdateTimeStepsDeleter
 
 transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(0.005),
-                                                          ConstantVelocity(0.005),
-                                                          ConstantVelocity(0.005),
                                                           ConstantVelocity(0.005)])
 measurement_model = LinearGaussian(
-    ndim_state=8, mapping=[0, 2, 4, 6],
-                                   noise_covar=np.diag([1**2, 1**2, 1**2, 1**2]))
+    ndim_state=6, mapping=[0, 2, 4], noise_covar=np.diag([1**2, 1**2, 1**2]))
 
 predictor = KalmanPredictor(transition_model)
 updater = KalmanUpdater(measurement_model)
