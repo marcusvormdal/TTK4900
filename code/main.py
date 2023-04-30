@@ -16,7 +16,7 @@ import camera_driver.camera_driver as cd
 import jpda_driver.jpda_driver as jd
 import support_functions.support_functions as sf
 import plot_driver.plot_driver as pd
-
+import copy
 import warnings
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) # This is a band-aid solution
 def run(start_stamp, runtime):
@@ -69,10 +69,8 @@ def run(start_stamp, runtime):
         
         #Track initialization 
         last_position = curr_pos[1]
-        measurement_model = LinearGaussian(
-    ndim_state=2, mapping=[0,2], noise_covar=np.diag([1**2, 1**2]))
-        measurement_model = LinearGaussian(
-    ndim_state=2, mapping=[0,2], noise_covar=np.diag([1**2, 1**2]))
+        measurement_model_cam = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([1**2, 1**2]))
+        measurement_model_lid = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([1**2, 1**2]))
     while(runtime > ts):
         t1_start = process_time() 
         tracker_data = set()
@@ -83,21 +81,22 @@ def run(start_stamp, runtime):
             if np.size(current_lines) != 0:
                 current_lines[:,1] = sf.get_relative_pos(current_lines[:,1], 'line')
                 current_lines[:,1] = ld.update_lines_pos(0, current_lines[:,1])
-            lm_plot = ld.set_lidar_offset(0, np.copy(lidar_measurements))
-            data = ld.set_lidar_offset(0+last_position[2], np.copy(lidar_measurements), t = [0.0+last_position[0],0.0+last_position[1]])
+            lm_plot = lidar_measurements #ld.set_lidar_offset(0,copy.deepcopy(lidar_measurements))
+            #test = np.array([[10.0,5.0],[10.0,0.0]])
+            data = ld.set_lidar_offset(0+last_position[2], copy.deepcopy(lidar_measurements), t = [0.0+last_position[0],0.0+last_position[1]])
             if np.size(data) != 0:
                 for meas in data:
                     lidar_buffer.append(meas)
                     
             if buffer_index == 3:  # Buffer lidar measurements and cluster after
-                clustered = ld.cluster_measurements(lidar_buffer)        
+                clustered = ld.cluster_measurements(lidar_buffer)
                 for c in clustered:
                     ned_track.append([c, 'lid'])
+                    tracker_data.add(Detection(state_vector =StateVector([c[0],c[1]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_cam))
+
                 lidar_buffer = []
                 buffer_index = 0
-                for meas in data:
-                    print("what", meas)
-                    tracker_data.add(Detection(state_vector =StateVector([meas[0],meas[1]]), timestamp =ts, measurement_model = measurement_model))
+
             else:
                 buffer_index += 1
                 t1_stop = process_time()
@@ -105,13 +104,12 @@ def run(start_stamp, runtime):
                 continue
             
         elif data_type == 'cam':
-            detections = cd.detect_trash(data, model, [-3,0,-2])
-            data = cd.set_cam_offset(last_position[2], detections,[0.10+last_position[0],0.0+last_position[1]])
+            detections = cd.detect_trash(data, model, [1.5,0.0,-2.7]) #-2.55 best
+            data = cd.set_cam_offset(last_position[2], detections,[0.0+last_position[0],0.0+last_position[1]])
             if np.size(data) != 0:
                 for meas in data:
                     ned_track.append([meas,'cam'])
-                    print("MEAS", meas)
-                    tracker_data.add(Detection(state_vector = StateVector([meas[0],meas[1]]), timestamp =ts, measurement_model = measurement_model))
+                    tracker_data.add(Detection(state_vector = StateVector([meas[0],meas[1]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_lid))
 
         elif data_type == 'pos':
             position_delta = np.array(data) - np.array(last_position)
@@ -134,13 +132,13 @@ def detector_wrapper(gen):
         yield ts, tracker_data
         
 def main():
-    start_stamp = 1675168535 #1675168352
+    start_stamp = 1675168544 #1675168352
     runtime = start_stamp + int(input("Runtime (s): "))
     animation_data = []
     jpda = True
     tracks = set()
     if jpda == False:
-        runner = run(start_stamp)
+        runner = run(start_stamp, runtime)
         for ts, data, data_type, plot_data in runner:
                 animation_data.append(plot_data)
                 

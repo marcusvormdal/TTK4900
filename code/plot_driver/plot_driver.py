@@ -17,8 +17,8 @@ ax3 = fig.add_subplot(gs[1, :])
 ln1_1 = ax1.add_collection(LineCollection([], lw=2))
 ln1_2 = ax1.scatter(x, y, marker='o', color='blue', linewidths=1)
 ln2, = ax2.plot([], [], color='green', marker='o', linestyle='dashed', linewidth=0.5, markersize=0.5)
-ln2_2 = ax2.scatter(100, 100, marker='x', color='red', linewidths=2)
-ln2_3 = ax2.scatter(100, 100, marker='*', color='blue', linewidths=0.3)
+ln2_2 = ax2.scatter(100, 100, marker='x', color='red', linewidths=1)
+ln2_3 = ax2.scatter(100, 100, marker='+', color='blue', linewidths=1)
 
 ln3 = ax3.imshow(a)
 
@@ -28,8 +28,8 @@ ax1.set_title('Lidar data')
 ax1.set_xlim([-10, 10])
 ax1.set_ylim([-10, 10])
 ax2.set_title('NED track')
-ax2.set_xlim([-40, 40])
-ax2.set_ylim([-40, 40])
+ax2.set_xlim([-20, 30])
+ax2.set_ylim([-20, 50])
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax3.set_title('Current camera frame')
@@ -73,8 +73,8 @@ def update(frame):
             
         for i,row in enumerate(detections[0]):
             cv2.rectangle(camera_frame, (int(row[0]), int(row[1])), (int(row[2]), int(row[3])), (0, 0, 255), 2)
-            pos_str = "x : " + str(detections[1][i][0]) +" , y : " +  str(detections[1][i][1])
-            cv2.putText(camera_frame, pos_str, (int(row[0]), int(row[1])-15),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        #    pos_str = "x : " + str(detections[1][i][0]) +" , y : " +  str(detections[1][i][1])
+        #    cv2.putText(camera_frame, pos_str, (int(row[0]), int(row[1])-15),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         
         imS = cv2.resize(camera_frame, (1920, 1080))             
         ln3.set_array(camera_frame)
@@ -117,9 +117,9 @@ def plot_lsd(ax, detector, lidar_bounds):
 
 def animate(animation_data):
 
-    ani = FuncAnimation(fig, update, frames = animation_data, blit = True, interval = 100, repeat = True, save_count=2000)
+    ani = FuncAnimation(fig, update, frames = animation_data, blit = True, interval = 100, repeat = True, save_count=50000)
     writervideo = FFMpegWriter(fps=25) 
 
-    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/clustering_w_yolo7_long_4.mp4', writervideo)
+    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/long_test.mp4', writervideo)
     
     #plt.show()

@@ -13,8 +13,8 @@ def get_camera_frame(video, start_stamp, video_path):
     s = timedelta(seconds=(int(float(duration)%60)+3))
     start_time = end_time - m - s
     stamp = datetime.timestamp(start_time) - 0.25 
-    video_offset = int((start_stamp - stamp) * 4 - 30*4)
-    stamp = stamp + int(start_stamp - stamp) -30
+    video_offset = int((start_stamp - stamp) * 4 - 6*4)+2
+    stamp = stamp + int(start_stamp - stamp)
     video.set(cv2.CAP_PROP_POS_FRAMES, video_offset)
     success = True
     for i in range(frame_num):
@@ -46,9 +46,10 @@ def detect_trash(image, model, rot):
     #if np.size(detections) > 0:
         #print("Detections:", detections)
     for b in boxes:
-        R = rotation_matrix(np.radians(-90+rot[0]), rot[1], np.radians(90+rot[2]))
-        world_coord = alternate_world_coord(b[1],b[2], R, [0,0,0.63])
-        world_coords.append(world_coord)
+        R = rotation_matrix(np.radians(-90.0+rot[0]), rot[1], np.radians(90.0+rot[2]))
+        world_coord = alternate_world_coord(b[1],b[2], R, [0.0,0.0,0.99])
+        if world_coord[0] < 8.0:
+            world_coords.append(world_coord)
         
     return [detections, world_coords, boxes]
 
@@ -92,6 +93,7 @@ def alternate_world_coord(u,v, R, t_wc):
     v_w = R@v_c + np.array([t_wc[0], t_wc[1], 0])
     s = -t_wc[2] / v_w[2]
     x_w = t_wc + s*v_w
+    #print("x_w",x_w)
     return x_w.round(2)
 
 def rotation_matrix(psi, theta, phi):
@@ -115,7 +117,10 @@ def set_cam_offset(rot, detections,t):
     if np.size(detections[1]) !=[]:
         for det in detections[1]:       
             measure = R @ np.array([det[0],det[1]]).T
+            #print("bef",measure)
+            #print("t",t)
             measure = measure.T + t
+            #print("aft",measure)
             cam_measurements.append(measure)
     return cam_measurements
 

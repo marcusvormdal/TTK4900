@@ -188,18 +188,13 @@ def update_lines_pos(rotation, lines, position_delta = []):
 
 def set_lidar_offset(offset, lidar_measurements, t = []):
     R = rotation_matrix(np.radians(offset),0,0)
-    print("bea", lidar_measurements)
     for meas in lidar_measurements:
         test = np.array([meas[0], -meas[1]])
-        print("t1",R[0:2,0:2] @ test)
-        print(R)
         temp = R[0:2,0:2] @ test
         if t != []:
             temp = temp + t
             meas[0] = temp[0]
             meas[1] = temp[1]
-    print("aft", lidar_measurements)
-
     return lidar_measurements
 
 def cluster_measurements(lidar_measurements):

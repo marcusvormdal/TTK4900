@@ -19,7 +19,7 @@ from stonesoup.deleter.time import UpdateTimeStepsDeleter
 transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(0.005),
                                                           ConstantVelocity(0.005)])
 measurement_model = LinearGaussian(
-    ndim_state=4, mapping=[0,1,2,3], noise_covar=np.diag([1**2, 1**2, 1**2, 1**2]))
+    ndim_state=4, mapping=[0,2], noise_covar=np.diag([1**2, 1**2]))
 
 predictor = KalmanPredictor(transition_model)
 updater = KalmanUpdater(measurement_model)
@@ -47,9 +47,8 @@ initiator = MultiMeasurementInitiator(
     )
 
 
-tracks, all_tracks = set(), set()
-
 def track(detector_generator):
+    
     tracker = MultiTargetMixtureTracker(
         initiator=initiator,
         deleter=deleter,
