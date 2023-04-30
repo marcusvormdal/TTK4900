@@ -37,7 +37,7 @@ hypothesiser = PDAHypothesiser(predictor=predictor,
 data_associator = JPDA(hypothesiser=hypothesiser)
 
 deleter_init = UpdateTimeStepsDeleter(time_steps_since_update=3)
-deleter = UpdateTimeStepsDeleter(time_steps_since_update=5)
+deleter = UpdateTimeStepsDeleter(time_steps_since_update=8)
 
 prior_state=GaussianState(StateVector(np.zeros((4,1))),
                             CovarianceMatrix(np.diag([1**2, 1**2, 1**2, 1**2])))

@@ -3,12 +3,14 @@ import cv2
 import torch
 from datetime import datetime
 from time import process_time
-import matplotlib.pyplot as plt
-
+from PIL import Image
 from stonesoup.types.array import StateVector
 from stonesoup.plotter import Plotterly
 from stonesoup.types.detection import Detection
 from stonesoup.models.measurement.linear import LinearGaussian
+import plotly
+from io import BytesIO
+import base64
 
 import lidar_driver.lidar_driver as ld
 import camera_driver.camera_driver as cd
@@ -148,7 +150,16 @@ def main():
         for _, ctracks in tracker:
             tracks.update(ctracks)
         plotter = Plotterly()
+
+        pil_img = Image.open("brattorkaia.png")
+        prefix = "data:image/png;base64,"
+        with BytesIO() as stream:
+            pil_img.save(stream, format="png")
+            base64_string = prefix + base64.b64encode(stream.getvalue()).decode("utf-8")
+        
         plotter.plot_tracks(tracks, [0, 2], uncertainty=False)
+        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string)])
+         
         plotter.fig.show()
 
         
