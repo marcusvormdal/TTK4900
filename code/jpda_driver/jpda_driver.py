@@ -40,16 +40,16 @@ deleter_init = UpdateTimeStepsDeleter(time_steps_since_update=3)
 deleter = UpdateTimeStepsDeleter(time_steps_since_update=5)
 
 prior_state=GaussianState(StateVector(np.zeros((4,1))),
-                            CovarianceMatrix(np.diag([100**2, 30**2, 100**2, 30**2])))
+                            CovarianceMatrix(np.diag([1**2, 1**2, 1**2, 1**2])))
 
 
 #deleter_new = CovarianceBasedDeleter(covar_trace_thresh=1)
 
-init_hypothesiser = DistanceHypothesiser(predictor, updater, measure=Mahalanobis(), missed_distance=0.5)
+init_hypothesiser = DistanceHypothesiser(predictor, updater, measure=Mahalanobis(), missed_distance=0.3)
 init_data_associator = GNNWith2DAssignment(init_hypothesiser)
 
 initiator = MultiMeasurementInitiator(
-    prior_state,
+    prior_state=GaussianState([[0], [0], [0], [0]], np.diag([0, 1, 0, 1])),
     measurement_model=measurement_model,
     deleter=deleter_init,
     data_associator=init_data_associator,
