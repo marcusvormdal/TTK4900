@@ -28,8 +28,8 @@ ax1.set_title('Lidar data')
 ax1.set_xlim([-10, 10])
 ax1.set_ylim([-10, 10])
 ax2.set_title('NED track')
-ax2.set_xlim([-20, 30])
-ax2.set_ylim([-20, 50])
+ax2.set_xlim([0, 15])
+ax2.set_ylim([-13, -5])
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax3.set_title('Current camera frame')
@@ -120,6 +120,6 @@ def animate(animation_data):
     ani = FuncAnimation(fig, update, frames = animation_data, blit = True, interval = 100, repeat = True, save_count=50000)
     writervideo = FFMpegWriter(fps=25) 
 
-    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/long_test.mp4', writervideo)
+    ani.save('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/animations/jpda_compare.mp4', writervideo)
     
     #plt.show()

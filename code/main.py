@@ -3,14 +3,13 @@ import cv2
 import torch
 from datetime import datetime
 from time import process_time
+import matplotlib.pyplot as plt
 
-from stonesoup.types.state import GaussianState
 from stonesoup.types.array import StateVector
-from stonesoup.types.track import Track
 from stonesoup.plotter import Plotterly
 from stonesoup.types.detection import Detection
 from stonesoup.models.measurement.linear import LinearGaussian
-from stonesoup.reader.base import DetectionReader
+
 import lidar_driver.lidar_driver as ld
 import camera_driver.camera_driver as cd
 import jpda_driver.jpda_driver as jd
@@ -69,8 +68,8 @@ def run(start_stamp, runtime):
         
         #Track initialization 
         last_position = curr_pos[1]
-        measurement_model_cam = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([1**2, 1**2]))
-        measurement_model_lid = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([1**2, 1**2]))
+        measurement_model_cam = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.5**2, 0.5**2]))
+        measurement_model_lid = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.5**2, 0.5**2]))
     while(runtime > ts):
         t1_start = process_time() 
         tracker_data = set()
@@ -92,7 +91,7 @@ def run(start_stamp, runtime):
                 clustered = ld.cluster_measurements(lidar_buffer)
                 for c in clustered:
                     ned_track.append([c, 'lid'])
-                    tracker_data.add(Detection(state_vector =StateVector([c[0],c[1]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_cam))
+                    tracker_data.add(Detection(state_vector =StateVector([c[1],c[0]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_cam))
 
                 lidar_buffer = []
                 buffer_index = 0
@@ -109,7 +108,7 @@ def run(start_stamp, runtime):
             if np.size(data) != 0:
                 for meas in data:
                     ned_track.append([meas,'cam'])
-                    tracker_data.add(Detection(state_vector = StateVector([meas[0],meas[1]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_lid))
+                    tracker_data.add(Detection(state_vector = StateVector([meas[1],meas[0]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_lid))
 
         elif data_type == 'pos':
             position_delta = np.array(data) - np.array(last_position)
@@ -117,7 +116,7 @@ def run(start_stamp, runtime):
             #print("current pos", last_position[2])
             track.append(last_position)
             curr_track = np.copy(track)
-
+            continue
         t1_stop = process_time()
         
         print(data_type, ' : ', t1_stop-t1_start, ' : ', ts)
@@ -128,8 +127,7 @@ def run(start_stamp, runtime):
 
 def detector_wrapper(gen):
     for ts, tracker_data, _, _ in gen:
-        print(ts, tracker_data)
-        yield ts, tracker_data
+        yield datetime.fromtimestamp(ts), tracker_data
         
 def main():
     start_stamp = 1675168544 #1675168352
@@ -149,11 +147,10 @@ def main():
         tracker = jd.track(gen)
         for _, ctracks in tracker:
             tracks.update(ctracks)
- 
         plotter = Plotterly()
-        plotter.plot_tracks(tracks, [0, 2], uncertainty=True)
-        plotter.fig 
-        
+        plotter.plot_tracks(tracks, [0, 2], uncertainty=False)
+        plotter.fig.show()
+
         
 main()  
     
