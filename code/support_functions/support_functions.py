@@ -40,7 +40,7 @@ def get_gps_date_ts(data_stream):
             date= datetime.strptime(date, "%d%m%y")
             return date
 
-def get_position(data_stream, date, start_stamp):
+def get_position(data_stream, date, start_stamp, relative_pos):
     file = open(data_stream, 'r')
     frames = file.readlines()
     set_start_pos = False
@@ -64,7 +64,11 @@ def get_position(data_stream, date, start_stamp):
             if start_stamp > timestamp:
                 continue
             if set_start_pos == False:
-                start_pos= [float(lat), float(lon)]
+                if relative_pos == True:
+                    start_pos= [float(lat), float(lon)]
+                else:
+                    start_pos= [63.43803* (np.pi/180), 10.39820* (np.pi/180)] #old
+                    #start_pos= [63.43803* (np.pi/180), 10.3970* (np.pi/180)]
                 set_start_pos = True
             ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=None, deg=False)
             yield [timestamp, [ned[0], ned[1], heading]]

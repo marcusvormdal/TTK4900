@@ -20,7 +20,7 @@ import plot_driver.plot_driver as pd
 import copy
 import warnings
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) # This is a band-aid solution
-def run(start_stamp, runtime):
+def run(start_stamp, runtime, relative_pos = True):
     # Control variables
     use_capture = True
     #1675168055 #- corner  1675168005-wall?  #  -
@@ -61,7 +61,7 @@ def run(start_stamp, runtime):
         # cast generators
         lidar_generator = ld.get_raw_lidar_data(raw_lidar_data, start_stamp)
         camera_generator = cd.get_camera_frame(video, start_stamp, video_path) 
-        pos_generator = sf.get_position(pos_stream, gps_date, start_stamp)
+        pos_generator = sf.get_position(pos_stream, gps_date, start_stamp, relative_pos)
 
         # Initialize data frames
         curr_lidar = next(lidar_generator)
@@ -70,8 +70,8 @@ def run(start_stamp, runtime):
         
         #Track initialization 
         last_position = curr_pos[1]
-        measurement_model_cam = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.5**2, 0.5**2]))
-        measurement_model_lid = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.5**2, 0.5**2]))
+        measurement_model_cam = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.1**2, 0.1**2]))
+        measurement_model_lid = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.1**2, 0.1**2]))
     while(runtime > ts):
         t1_start = process_time() 
         tracker_data = set()
@@ -144,22 +144,22 @@ def main():
                 
         pd.animate(animation_data)     
     else:
-        runner = run(start_stamp, runtime)
+        runner = run(start_stamp, runtime, relative_pos = False)
         gen = detector_wrapper(runner)
         tracker = jd.track(gen)
         for _, ctracks in tracker:
             tracks.update(ctracks)
         plotter = Plotterly()
 
-        pil_img = Image.open("brattorkaia.png")
+        pil_img = Image.open("brattorkaia_2.png").transpose(Image.FLIP_TOP_BOTTOM )
         prefix = "data:image/png;base64,"
         with BytesIO() as stream:
             pil_img.save(stream, format="png")
             base64_string = prefix + base64.b64encode(stream.getvalue()).decode("utf-8")
         
         plotter.plot_tracks(tracks, [0, 2], uncertainty=False)
-        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string)])
-         
+        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.451, dy = 0.451)])
+        plotter.fig["layout"]["yaxis"]["autorange"]=True
         plotter.fig.show()
 
         
