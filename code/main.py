@@ -11,6 +11,7 @@ from stonesoup.models.measurement.linear import LinearGaussian
 import plotly
 from io import BytesIO
 import base64
+import pymap3d
 
 import lidar_driver.lidar_driver as ld
 import camera_driver.camera_driver as cd
@@ -151,17 +152,22 @@ def main():
             tracks.update(ctracks)
         plotter = Plotterly()
 
-        pil_img = Image.open("brattorkaia_2.png").transpose(Image.FLIP_TOP_BOTTOM )
+        pil_img = Image.open("brattor_farge.png").transpose(Image.FLIP_TOP_BOTTOM )
         prefix = "data:image/png;base64,"
         with BytesIO() as stream:
             pil_img.save(stream, format="png")
             base64_string = prefix + base64.b64encode(stream.getvalue()).decode("utf-8")
+        #print("dist", pymap3d.geodetic2ned(63.43802* (np.pi/180), 10.398208* (np.pi/180), 0, 63.4394425* (np.pi/180), 10.39969* (np.pi/180), 0, ell=None, deg=False))
         
         plotter.plot_tracks(tracks, [0, 2], uncertainty=False)
-        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.451, dy = 0.451)])
+        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.1667, dy = 0.1667)])
         plotter.fig["layout"]["yaxis"]["autorange"]=True
         plotter.fig.show()
 
+        #diff 0.9557
+        #test  0.3452
+        #"tuned " dx = 0.2875, dy = 0.361
         
+        #hard align N 63.4386345  E 10.3985848
 main()  
     
