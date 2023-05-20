@@ -1,6 +1,8 @@
 import numpy as np
 import pymap3d
 from datetime import datetime, timedelta
+#import rosbag
+
 def get_relative_pos(object, obj_t = 'point'):
     if obj_t == 'point':
         if np.size(object) == 0:
@@ -40,39 +42,77 @@ def get_gps_date_ts(data_stream):
             date= datetime.strptime(date, "%d%m%y")
             return date
 
-def get_position(data_stream, date, start_stamp, relative_pos):
-    file = open(data_stream, 'r')
-    frames = file.readlines()
+def get_position(data_stream, start_stamp, relative_pos, date = None, ros = False):
+
     set_start_pos = False
     heading = 0
-    for i, frame in enumerate(frames):
-        if frame[1:6] == 'GPGGA':
-            pos_data = frame.split(',')
-            time   = pos_data[1].replace('.', '')+'0000'
-            lat = (float(pos_data[2][0:2]) + float(pos_data[2][2:]) /60) * (np.pi/180)
-            lon = (float(pos_data[4][0:3]) + float(pos_data[4][3:]) /60) * (np.pi/180)
-            j, found = 1, False
-            while frames[i+j][1:6] != 'GPGGA' and j < 10 and found == False:
-                if frames[i+j][1:6] == 'GPHDT':
-                    heading=float(frames[i+j].split(',')[1])
-                    found = True
-                j += j
-            curr_time = datetime.strptime(time, "%H%M%S%f")
-            delta = timedelta(hours = curr_time.hour+1, minutes =curr_time.minute, seconds = curr_time.second, milliseconds= curr_time.microsecond*1/1000)
-            curr_date = date + delta
-            timestamp = datetime.timestamp(curr_date)
-            if start_stamp > timestamp:
-                continue
+    if ros == True:
+        t = 1684077694
+        for i in range(10000):
+            
+            yield [t, [0,0,0]]
+            t +=1
+            
+        for topic, msg, t in data_stream.read_messages(topics=['/GPS_publisher']):
+            t = t.to_sec()
+            if start_stamp > t:
+                        continue
             if set_start_pos == False:
                 if relative_pos == True:
                     start_pos= [float(lat), float(lon)]
                 else:
-                    start_pos= [63.43803* (np.pi/180), 10.39820* (np.pi/180)] #old
-                    #start_pos= [63.43803* (np.pi/180), 10.3970* (np.pi/180)]
+                    start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]
                 set_start_pos = True
-            ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=None, deg=False)
-            yield [timestamp, [ned[0], ned[1], heading]]
+            ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
+            ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
             
+            print("HEADING", heading)
+            yield [t, [ned[0], ned[1], heading]]
+            #for final test
+            
+            #yield [t, [ned[0], ned[1], heading]]
+            
+        
+        
+            
+    else:
+        file = open(data_stream, 'r')
+        frames = file.readlines()
+        for i, frame in enumerate(frames):
+            if frame[1:6] == 'GPGGA':
+                pos_data = frame.split(',')
+                time   = pos_data[1].replace('.', '')+'0000'
+                lat = (float(pos_data[2][0:2]) + float(pos_data[2][2:]) /60) * (np.pi/180)
+                lon = (float(pos_data[4][0:3]) + float(pos_data[4][3:]) /60) * (np.pi/180)
+                j, found = 1, False
+                while frames[i+j][1:6] != 'GPGGA' and j < 10 and found == False:
+                    if frames[i+j][1:6] == 'GPHDT':
+                        heading=float(frames[i+j].split(',')[1])
+                        found = True
+                    j += j
+                curr_time = datetime.strptime(time, "%H%M%S%f")
+                delta = timedelta(hours = curr_time.hour+1, minutes =curr_time.minute, seconds = curr_time.second, milliseconds= curr_time.microsecond*1/1000)
+                curr_date = date + delta
+                timestamp = datetime.timestamp(curr_date)
+                
+                if start_stamp > timestamp:
+                    continue
+                if set_start_pos == False:
+                    if relative_pos == True:
+                        start_pos= [float(lat), float(lon)]
+                    else:
+                        start_pos_old= [63.43802* (np.pi/180), 10.398208* (np.pi/180)] #pytold 
+                        start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]
+                    set_start_pos = True
+                ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
+                ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
+                yield [timestamp, [ned[0], ned[1], heading]]
+            
+
+def rtk_correct(rtk_file, coordinate):
+    
+    corrected_coordinate = None
+    return corrected_coordinate
 
 def data_handler(curr_lidar, curr_cam, curr_pos, gen_lidar, gen_cam, gen_pos):
     #print('Lidar_t', curr_lidar[0])

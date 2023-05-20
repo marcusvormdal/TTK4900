@@ -39,7 +39,7 @@ data_associator = JPDA(hypothesiser=hypothesiser)
 
 deleter_init = UpdateTimeStepsDeleter(time_steps_since_update=3)
 
-deleter_2 = UpdateTimeStepsDeleter(time_steps_since_update=10)
+deleter_2 = UpdateTimeStepsDeleter(time_steps_since_update=100)
 deleter = CovarianceBasedDeleter(covar_trace_thresh=1)
 multi_deleter = CompositeDeleter([deleter, deleter_2], intersect = False)
 

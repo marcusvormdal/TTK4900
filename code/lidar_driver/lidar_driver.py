@@ -6,6 +6,7 @@ from support_functions.support_functions import get_image_pos, rotation_matrix
 from queue import PriorityQueue
 import pybst
 from sklearn.cluster import KMeans, MeanShift
+#import rosbag
 
 def read_pcap_data(filepath):
     config = vd.Config(model='VLP-16', rpm=600)
@@ -16,11 +17,23 @@ def read_pcap_data(filepath):
     np.save('lidar_trash_point_array.npy', np.array(cloud_arrays, dtype=object))
     return
 
-def get_raw_lidar_data(raw_lidar_data, start_stamp):
-    for frame in raw_lidar_data:
-        if start_stamp > frame[0]:
-            continue
-        yield frame
+def get_raw_lidar_data(raw_lidar_data, start_stamp, ros = False):
+    
+    if ros == True:
+        config = vd.Config(model='VLP-16', rpm=600)            
+        for stamp, points, topic in vd.read_bag(raw_lidar_data, config, ['/velodyne_packets']):
+            stamp = stamp.to_sec()
+            if start_stamp > stamp:
+                print(stamp)
+                continue
+            
+            yield [stamp, points]
+    else:
+        for frame in raw_lidar_data:
+            if start_stamp > frame[0]:
+                continue
+            yield frame
+        
         
 def get_lidar_measurements(detector, lidar_data, position_delta, radius, intensity, heigth, current_lines):
     if np.size(lidar_data) == 0:
@@ -38,7 +51,6 @@ def get_lidar_measurements(detector, lidar_data, position_delta, radius, intensi
     
     if np.size(frame_points) != 0:
         lidar_image = lidar_to_image(frame_points)
-        #cv2.imshow('converted', lidar_image)
         lidar_image = cv2.GaussianBlur(lidar_image,(3,3),0)
         new_lines = detector.detect(lidar_image)
         lines = update_lines(new_lines, current_lines, position_delta)

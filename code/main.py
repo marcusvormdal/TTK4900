@@ -20,15 +20,18 @@ import support_functions.support_functions as sf
 import plot_driver.plot_driver as pd
 import copy
 import warnings
+import rosbag
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) # This is a band-aid solution
-def run(start_stamp, runtime, relative_pos = True):
+
+def run(start_stamp, runtime, ros = True, relative_pos = True):
     # Control variables
     use_capture = True
     #1675168055 #- corner  1675168005-wall?  #  -
     
     #3615 for trash bag
-    video_path = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/lidar_collection_31_01/videos/full_run.mp4'
 
+    video_path = '../data/lidar_collection_31_01/videos/full_run.mp4'
+    bag = rosbag.Bag('./bags/georef_test2.bag', "r")
     #global variables
     ts = start_stamp
     lidar_measurements = []
@@ -44,7 +47,6 @@ def run(start_stamp, runtime, relative_pos = True):
     buffer_index = 0
     
     # Initiate LSD
-    
     detector = cv2.createLineSegmentDetector(0)
 
     # If using captured data
@@ -54,15 +56,22 @@ def run(start_stamp, runtime, relative_pos = True):
         # load data
         raw_lidar_data = np.load('./lidar_driver/lidar_trash_point_array.npy', allow_pickle=True)
         video = cv2.VideoCapture(video_path)
-        model = torch.hub.load('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolov7', 'custom', path_or_model = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolo7.pt', source='local')
+        model = torch.hub.load('camera_driver/yolov7', 'custom', path_or_model = 'camera_driver/yolo7.pt', source='local')
+        #model = torch.hub.load('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolov7', 'custom', path_or_model = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolo7.pt', source='local')
         #model = torch.hub.load('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolov7', 'custom', path ='C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolo7_light.pt', source='local', force_reload=False)
-        pos_stream = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/data/testrecord.txt'
+        pos_stream = '../data/testrecord.txt'
         gps_date = sf.get_gps_date_ts(pos_stream)  # Need to resolve once
 
         # cast generators
-        lidar_generator = ld.get_raw_lidar_data(raw_lidar_data, start_stamp)
-        camera_generator = cd.get_camera_frame(video, start_stamp, video_path) 
-        pos_generator = sf.get_position(pos_stream, gps_date, start_stamp, relative_pos)
+        
+        if ros == True:
+            lidar_generator = ld.get_raw_lidar_data(bag, start_stamp, ros)
+            camera_generator = cd.get_camera_frame(bag, start_stamp, ros=True) 
+            pos_generator = sf.get_position(bag, start_stamp, relative_pos, ros=True)
+        else:
+            lidar_generator = ld.get_raw_lidar_data(raw_lidar_data, start_stamp)
+            camera_generator = cd.get_camera_frame(video, start_stamp, video_path) 
+            pos_generator = sf.get_position(pos_stream, start_stamp, relative_pos, gps_date)
 
         # Initialize data frames
         curr_lidar = next(lidar_generator)
@@ -74,18 +83,20 @@ def run(start_stamp, runtime, relative_pos = True):
         measurement_model_cam = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.1**2, 0.1**2]))
         measurement_model_lid = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.1**2, 0.1**2]))
     while(runtime > ts):
+
         t1_start = process_time() 
         tracker_data = set()
         data_type, ts, data, curr_lidar, curr_cam, curr_pos = sf.data_handler(curr_lidar, curr_cam, curr_pos, lidar_generator, camera_generator, pos_generator)
-        
+        print("data_type",data_type)
         if data_type == 'lid':
             lidar_measurements, current_lines, thresholded_raw = ld.get_lidar_measurements(detector, data, position_delta = position_delta, radius = 10, intensity=0, heigth=-0.80, current_lines=current_lines)         # All lidar points on the water surface, bounds for plotting
+            print("lid", lidar_measurements)
             if np.size(current_lines) != 0:
                 current_lines[:,1] = sf.get_relative_pos(current_lines[:,1], 'line')
                 current_lines[:,1] = ld.update_lines_pos(0, current_lines[:,1])
             lm_plot = lidar_measurements #ld.set_lidar_offset(0,copy.deepcopy(lidar_measurements))
             #test = np.array([[10.0,5.0],[10.0,0.0]])
-            data = ld.set_lidar_offset(0+last_position[2], copy.deepcopy(lidar_measurements), t = [0.0+last_position[0],0.0+last_position[1]])
+            data = ld.set_lidar_offset(+last_position[2], copy.deepcopy(lidar_measurements), t = [0.0+last_position[0],-0.27+last_position[1]])
             if np.size(data) != 0:
                 for meas in data:
                     lidar_buffer.append(meas)
@@ -106,8 +117,9 @@ def run(start_stamp, runtime, relative_pos = True):
                 continue
             
         elif data_type == 'cam':
-            detections = cd.detect_trash(data, model, [1.5,0.0,-2.7]) #-2.55 best
-            data = cd.set_cam_offset(last_position[2], detections,[0.0+last_position[0],0.0+last_position[1]])
+            detections = cd.detect_trash(data, model, [5,0.0,-0.85]) #-[5,0.0,-0.85]
+            print("detections",detections)
+            data = cd.set_cam_offset(last_position[2], detections,[0.0+last_position[0],-0.04+last_position[1]])
             if np.size(data) != 0:
                 for meas in data:
                     ned_track.append([meas,'cam'])
@@ -123,7 +135,7 @@ def run(start_stamp, runtime, relative_pos = True):
         t1_stop = process_time()
         
         print(data_type, ' : ', t1_stop-t1_start, ' : ', ts)
-        
+        print(data)
         plot_data = [data_type, thresholded_raw, lm_plot,current_lines, detections, curr_track, curr_cam[1], np.copy(ned_track)]
         
         yield ts, tracker_data, data_type, plot_data
@@ -133,7 +145,7 @@ def detector_wrapper(gen):
         yield datetime.fromtimestamp(ts), tracker_data
         
 def main():
-    start_stamp = 1675168544 #1675168352
+    start_stamp = 1684077700 #(for full trash test1675168544) 1675168352
     runtime = start_stamp + int(input("Runtime (s): "))
     animation_data = []
     jpda = True
@@ -142,7 +154,6 @@ def main():
         runner = run(start_stamp, runtime)
         for ts, data, data_type, plot_data in runner:
                 animation_data.append(plot_data)
-                
         pd.animate(animation_data)     
     else:
         runner = run(start_stamp, runtime, relative_pos = False)
@@ -157,17 +168,14 @@ def main():
         with BytesIO() as stream:
             pil_img.save(stream, format="png")
             base64_string = prefix + base64.b64encode(stream.getvalue()).decode("utf-8")
-        #print("dist", pymap3d.geodetic2ned(63.43802* (np.pi/180), 10.398208* (np.pi/180), 0, 63.4394425* (np.pi/180), 10.39969* (np.pi/180), 0, ell=None, deg=False))
-        
-        plotter.plot_tracks(tracks, [0, 2], uncertainty=False)
-        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.1667, dy = 0.1667)])
-        plotter.fig["layout"]["yaxis"]["autorange"]=True
+            
+        #ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
+        #print("dist", pymap3d.geodetic2ned(63.4401734* (np.pi/180), 10.3995373* (np.pi/180), 0, 63.4392986* (np.pi/180), 	10.4013141* (np.pi/180), 0, ell=ell_grs80, deg=False))
+        #print(tracker.tracks)
+        plotter.plot_tracks(tracks, [0, 2], uncertainty=True)
+        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.1667, dy = 0.1667)]) #0.1667 is standard  #tuned dx = 0.1615, dy = 0.1760
+        plotter.fig["layout"]["yaxis"]["autorange"]=False
         plotter.fig.show()
 
-        #diff 0.9557
-        #test  0.3452
-        #"tuned " dx = 0.2875, dy = 0.361
-        
-        #hard align N 63.4386345  E 10.3985848
 main()  
     

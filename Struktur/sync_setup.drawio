@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net" modified="2023-05-06T16:14:59.646Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36" etag="LPCr7sAW4fWVXiF85Ix8" version="21.2.9" type="device">
+  <diagram name="Page-1" id="dldD8JOpe4aGWy1eiEDN">
+    <mxGraphModel dx="2358" dy="1347" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="W4XlMCbpCweLrCSdOZV7-2" target="W4XlMCbpCweLrCSdOZV7-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-2" value="GNSS (stamp)&lt;br&gt;&lt;br&gt;LiDAR (stamp)&lt;br&gt;&lt;br&gt;Image" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="160" width="120" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="W4XlMCbpCweLrCSdOZV7-8" target="W4XlMCbpCweLrCSdOZV7-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-8" value="GNSS (stamp)&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;LiDAR (stamp)&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;Image" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="160" width="120" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-9" value="" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="160" width="120" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="W4XlMCbpCweLrCSdOZV7-10" target="W4XlMCbpCweLrCSdOZV7-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-10" value="GNSS (stamp)&lt;br&gt;&lt;br&gt;LiDAR(stamp)" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="400" width="120" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="W4XlMCbpCweLrCSdOZV7-11" target="W4XlMCbpCweLrCSdOZV7-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-11" value="" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="400" width="120" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-12" value="" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="400" width="120" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="W4XlMCbpCweLrCSdOZV7-13" target="W4XlMCbpCweLrCSdOZV7-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-13" value="GNSS&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;LiDAR&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;Image" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="640" width="120" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-14" value="GNSS (stamp)&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;LiDAR (stamp)&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;Image (stamp)" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="640" width="120" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-16" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;Otter&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="350" y="120" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-18" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;Remote interface&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="505" y="120" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-19" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;Sensor&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="145" y="120" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-20" value="D1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="30" y="258" width="40" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-21" value="D2" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="20" y="478" width="40" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-22" value="Real-time" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="5" y="740" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-24" value="Wired &lt;br&gt;interface" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="250" y="218" width="70" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-27" value="Wired &lt;br&gt;interface" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="240" y="460" width="70" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="W4XlMCbpCweLrCSdOZV7-28" value="Wired &lt;br&gt;interface" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="240" y="700" width="70" height="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
