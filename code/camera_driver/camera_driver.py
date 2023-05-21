@@ -72,6 +72,17 @@ def detect_trash(image, model, rot):
         world_coord = georeference(b[1],b[2], R, [0.0,0.0,0.50])
         if world_coord[0] < 8.0:
             world_coords.append(world_coord)
+    #Temp
+    '''
+    if np.size(boxes) > 0:
+        for box in boxes:
+            cv2.line(image, (1344, 1520), (int(box[1]), int(box[2])), (0, 255, 0), 2)
+        for i,row in enumerate(detections):
+            cv2.rectangle(image, (int(row[0]), int(row[1])), (int(row[2]), int(row[3])), (0, 0, 255), 2)
+        imS = cv2.resize(image, (1920, 1080)) 
+        cv2.imshow('img', imS)
+        cv2.waitKey(0)
+    '''
     return [detections, world_coords, boxes]
 
 
@@ -89,8 +100,7 @@ def georeference(u,v, R, t_wc):
     v_w = R@v_c + np.array([t_wc[0], t_wc[1], 0])
     s = -t_wc[2] / v_w[2]
     x_w = t_wc + s*v_w
-    #print("x_w",x_w)
-    return x_w.round(2)
+    return x_w
 
 def rotation_matrix(psi, theta, phi):
     

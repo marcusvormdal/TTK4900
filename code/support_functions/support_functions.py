@@ -66,8 +66,8 @@ def get_position(data_stream, start_stamp, relative_pos, date = None, ros = Fals
                     start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]
                     set_start_pos = True
                     
-                lat = 63.440001* (np.pi/180)
-                lon = 10.399845* (np.pi/180) 
+                lat = 63.4399955309375* (np.pi/180)
+                lon = 10.3998270490625* (np.pi/180) 
                 
                 ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
                 ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
@@ -157,6 +157,7 @@ def NIS_NEES_RMSE(tracker, gt):
         NIS = []
         NEES = []
         RMSE = []
+        track_error = []
         for meas in track:
             
             ts = datetime.timestamp(meas._property_timestamp)
@@ -170,8 +171,9 @@ def NIS_NEES_RMSE(tracker, gt):
             if ts + 0.2 >= ned_gt[0] >= ts -0.2:
                 x_err = np.array([x_hat[0], x_hat[2]]).T-np.array(ned_gt[1]).T
                 print(x_err)
+                
                 NEES.append(get_NEES(x_err, P_pos))
-                RMSE.append(get_RMSE(x_err))
+                track_error.append(x_err)
                 
                 ned_gt = next(gt_gen)
             elif ned_gt[0] < ts - 0.5:
@@ -198,8 +200,10 @@ def NIS_NEES_RMSE(tracker, gt):
                     pass
         track_NIS.append(NIS)
         track_NEES.append(NEES)
+        RMSE = get_RMSE(np.array(track_error))
         track_RMSE.append(RMSE)
-        
+    
+    
     print("NIS",track_NIS)
     print("NEES",track_NEES)
     print("RMSE",track_RMSE)
@@ -225,7 +229,7 @@ def gt_generator(gpx, start_stamp):
     for track in gpx.tracks:
         for segment in track.segments:
             for point in segment.points:
-                timestamp = datetime.timestamp(point.time )
+                timestamp = datetime.timestamp(point.time ) 
                 start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]  #brattør_farge 
                 ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
                 ned = pymap3d.geodetic2ned(point.latitude* (np.pi/180), point.longitude* (np.pi/180), 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)

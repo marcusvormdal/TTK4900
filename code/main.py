@@ -68,7 +68,6 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
 
         # Initialize data frames
         curr_lidar = next(lidar_generator)
-        print("get ts:", curr_lidar)
         curr_cam = next(camera_generator)
         curr_pos = next(pos_generator)
         
@@ -110,7 +109,6 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
             
         elif data_type == 'cam':
             detections = cd.detect_trash(data, model, [5,0.0,-0.85]) #-[5,0.0,-0.85]
-            print("detections",detections)
             data = cd.set_cam_offset(last_position[2], detections,[0.0+last_position[0],-0.04+last_position[1]])
             if np.size(data) != 0:
                 for meas in data:
@@ -126,7 +124,8 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
         t1_stop = process_time()
         
         print(data_type, ' : ', t1_stop-t1_start, ' : ', ts)
-        plot_data = [data_type, thresholded_raw, lm_plot,current_lines, detections, curr_track, curr_cam[1], np.copy(ned_track)]
+        plot_data = [data_type, [], [], [], [], curr_track, [], np.copy(ned_track)]
+        #plot_data = [data_type, thresholded_raw, lm_plot,current_lines, detections, curr_track, curr_cam[1], np.copy(ned_track)]
         
         yield ts, tracker_data, data_type, plot_data
 
@@ -140,13 +139,13 @@ def main():
     runtime = start_stamp + int(input("Runtime (s): "))
     gt =  '../data/test_marcus/gnns_data/bottles.gpx'
     animation_data = []
-    jpda = False
+    jpda = True
     tracks = set()
     
     if jpda == False:
         runner = run(start_stamp, runtime, ros = True, relative_pos = True)
         for ts, data, data_type, plot_data in runner:
-                #animation_data.append(plot_data)
+                animation_data.append(plot_data)
         pd.animate(animation_data)     
         
     else:
@@ -164,7 +163,14 @@ def main():
             base64_string = prefix + base64.b64encode(stream.getvalue()).decode("utf-8")
             
         NIS, NEES, RMSE = sf.NIS_NEES_RMSE(tracker, gt)
-                    
+        for i, track in enumerate(NIS):
+            pd.plot_nis(np.array(track)[:,0], np.array(track)[:,1], i)
+            
+        #for i, track in enumerate(NEES):
+        #    pd.plot_nees(np.array(track)[:,0], np.array(track)[:,1], i)
+        
+        
+        
         plotter.plot_tracks(tracks, [0, 2], uncertainty=True)
         plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.1615, dy = 0.1760)]) 
         plotter.fig["layout"]["yaxis"]["autorange"]=False

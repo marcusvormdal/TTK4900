@@ -4,7 +4,9 @@ import cv2
 #from cv_bridge import CvBridge
 import glob
 #import rosbag
-
+import gpxpy
+import gpxpy.gpx
+from datetime import datetime, timedelta
 #bag = rosbag.Bag('./georef_test1.bag', "r")
 
 #bridge = CvBridge()
@@ -61,15 +63,28 @@ def rotation_matrix(psi, theta, phi):
     R = (R_z@R_y@R_x).round(5)
     return R
 
-
-
-
+def gt_generator():
+    gpx_file = open('../../data/test_marcus/gnns_data/20230516-132518-loc3.gpx', 'r')
+    gpx = gpxpy.parse(gpx_file)
+    lat = []
+    long = []
+    for track in gpx.tracks:
+        for segment in track.segments:
+            for point in segment.points:
+                print("time", datetime.timestamp(point.time))
+                lat.append(point.latitude)
+                long.append(point.longitude)
+                
+    print("lat", np.mean(np.array(lat)))
+    print("long",np.mean(np.array(long)))
+    
 intrinsic = cv2.UMat(np.array([[2.75344274e+03, 0.00000000e+00, 1.34664016e+03],[0.00000000e+00, 2.77845260e+03, 7.48362894e+02], [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])) 
 
 distortion = cv2.UMat(np.array([[-0.94911185,  2.27298045 , 0.02827832 ,-0.00913316 ,-3.70567064]]))
 
 def __main__():
-    test_world_coord()
+    #test_world_coord()
+    gt_generator()
     '''
     for topic, msg, t in bag.read_messages(topics=['/camera/image_raw/compressed']):
         cv_img = bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="passthrough")

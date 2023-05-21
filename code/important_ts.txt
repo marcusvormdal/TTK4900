@@ -1,31 +1,34 @@
+------------- obs locations ------------
 
-
-------------- JPDA test ------------
-bottle ts:
+1684227351 lat 63.4399955309375  long 10.3998270490625    POS 1
+1684233193 lat 63.43998448192789 long 10.399792069583912  POS 2
+1684236385 lat 63.4399867960294  long 10.399749464852942  POS 3
+------------- JPDA test ------------ 
+bottle ts: at POS 1
 lat long: 
     - First trial:  1684231911  47 s      84 cm    
     - Second trial: 1684232105  51 s      87 cm
     - Third trial:  1684232271  48 s      90 cm
     - Fourth trial: 1684232663  63 s      94 cm
 
-box ts:
-    - First trial:  1684237154  150 s     56 cm 
-    - Second trial: 1684237532  153 s     69 cm
-    - Third trial:  1684237692  156 s     69 cm
-    - Fourth trial: 1684237855  89 s      69 cm
 
-bag ts:
+bag ts: at POS 2
     - First trial:  1684234623  54 s      56 cm 
     - Second trial: 1684234773  57 s      61 cm
     - Third trial:  1684234944  61 s      66 cm
     - Fourth trial: 1684235101  255 s     71 cm
 
-clear ts:
+clear ts:  at POS 2
     - First trial:  1684235788  103 s     80 cm
     - Second trial: 1684235899  129 s     80 cm
     - Third trial:  1684236034  301 s     80 cm
     - Fourth trial: 1684236356  197 s     80 cm 
 
+box ts: at POS 3
+    - First trial:  1684237154  150 s     56 cm 
+    - Second trial: 1684237532  153 s     69 cm
+    - Third trial:  1684237692  156 s     69 cm
+    - Fourth trial: 1684237855  89 s      69 cm
 
 ------------ goeref test ---------------
 

@@ -6,6 +6,8 @@ import matplotlib as lib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.collections import LineCollection
+from scipy.stats import chi2
+
 
 x, y, c = np.random.random((3, 10))
 a=np.random.random((1080, 1920))
@@ -68,17 +70,19 @@ def update(frame):
                 ln1_2.set_offsets(lid_data)
 
     if data_type == 'cam':
-        for box in detections[2]:
-            cv2.line(camera_frame, (1344, 1520), (int(box[1]), int(box[2])), (0, 255, 0), 2)
+        try:
+            for box in detections[2]:
+                cv2.line(camera_frame, (1344, 1520), (int(box[1]), int(box[2])), (0, 255, 0), 2)
+                
+            for i,row in enumerate(detections[0]):
+                cv2.rectangle(camera_frame, (int(row[0]), int(row[1])), (int(row[2]), int(row[3])), (0, 0, 255), 2)
+            #    pos_str = "x : " + str(detections[1][i][0]) +" , y : " +  str(detections[1][i][1])
+            #    cv2.putText(camera_frame, pos_str, (int(row[0]), int(row[1])-15),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
-        for i,row in enumerate(detections[0]):
-            cv2.rectangle(camera_frame, (int(row[0]), int(row[1])), (int(row[2]), int(row[3])), (0, 0, 255), 2)
-        #    pos_str = "x : " + str(detections[1][i][0]) +" , y : " +  str(detections[1][i][1])
-        #    cv2.putText(camera_frame, pos_str, (int(row[0]), int(row[1])-15),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        
-        imS = cv2.resize(camera_frame, (1920, 1080))             
-        ln3.set_array(camera_frame)
-
+            imS = cv2.resize(camera_frame, (1920, 1080))             
+            ln3.set_array(camera_frame)
+        except:
+            pass
 
     else:
         pos_track = np.array(pos_track) 
@@ -123,3 +127,65 @@ def animate(animation_data):
     ani.save('./animations/jpda_test_plots/bottle1.mp4', writervideo)
     
     #plt.show()
+
+def plot_nis(times, NIS_xy, track, confidence=0.90):
+    "Modified plotting from Sensor fusion project 3 -  "
+    confidence_intervals = [np.array(chi2.interval(confidence, ndof))
+                            for ndof in range(1, 4)]
+    fig, ax = plt.subplots(1, 1, sharex=True, figsize=(6.4, 5.2))
+    fig.canvas.manager.set_window_title("NIS")
+
+    ci_lower, ci_upper = confidence_intervals[2-1]
+    n_total = len(NIS_xy)
+    n_below = len([None for value in NIS_xy if value < ci_lower])
+    n_above = len([None for value in NIS_xy if value > ci_upper])
+    frac_inside = (n_total - n_below - n_above)/n_total
+    frac_below = n_below/n_total
+    frac_above = n_above/n_total
+
+    ax.plot(times, NIS_xy, label=fr"$NIS_{{{'xy'}}}$")
+    ax.hlines([ci_lower, ci_upper], min(times), max(times), 'C3', ":",
+                    label=f"{confidence:2.1%} conf")
+    ax.set_title(
+        f"NIS ${{{'xy'}}}$ "
+        f"({frac_inside:2.1%} inside, {frac_below:2.1%} below, "
+        f"{frac_above:2.1%} above "
+        f" [{confidence:2.1%} conf])")
+
+    ax.set_yscale('log')
+
+    ax.set_xlabel('$t$ [$s$]')
+    fig.align_ylabels(ax)
+    fig.subplots_adjust(left=0.15, right=0.97, bottom=0.1, top=0.93,
+                        hspace=0.3)
+    fig.savefig('NIS_track_' + str(track)+'.pdf')
+
+
+def plot_nees(times, pos, track, confidence=0.90):
+    "Modified plotting from Sensor fusion project 3 -  "
+    ci_lower, ci_upper = np.array(chi2.interval(confidence, 2))
+    fig, ax = plt.subplots(1, 1, sharex=True, figsize=(6.4, 9))
+    fig.canvas.manager.set_window_title("NEES")
+
+    n_total = len(pos)
+    n_below = len([None for value in pos if value < ci_lower])
+    n_above = len([None for value in pos if value > ci_upper])
+    frac_inside = (n_total - n_below - n_above)/n_total
+    frac_below = n_below/n_total
+    frac_above = n_above/n_total
+
+    ax.plot(times, pos, label=fr"$NEES_POS$")
+    ax.hlines([ci_lower, ci_upper], min(times), max(times), 'C3', ":",
+                    label=f"{confidence:2.1%} conf")
+    ax.set_title(
+        fr"NEES ${{{'POS'}}}$ "
+        fr"({frac_inside:2.1%} inside, "
+        f" {frac_below:2.1%} below, {frac_above:2.1%} above "
+        f"[{confidence:2.1%} conf])"
+    )
+    ax.set_yscale('log')
+    ax.set_xlabel('$t$ [$s$]')
+    fig.align_ylabels(ax)
+    fig.subplots_adjust(left=0.15, right=0.97, bottom=0.06, top=0.94,
+                        hspace=0.3)
+    fig.savefig('NEES_track_' + str(track)+'.pdf')
