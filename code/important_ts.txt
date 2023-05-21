@@ -1,0 +1,40 @@
+
+
+------------- JPDA test ------------
+bottle ts:
+lat long: 
+    - First trial:  1684231911  47 s      84 cm    
+    - Second trial: 1684232105  51 s      87 cm
+    - Third trial:  1684232271  48 s      90 cm
+    - Fourth trial: 1684232663  63 s      94 cm
+
+box ts:
+    - First trial:  1684237154  150 s     56 cm 
+    - Second trial: 1684237532  153 s     69 cm
+    - Third trial:  1684237692  156 s     69 cm
+    - Fourth trial: 1684237855  89 s      69 cm
+
+bag ts:
+    - First trial:  1684234623  54 s      56 cm 
+    - Second trial: 1684234773  57 s      61 cm
+    - Third trial:  1684234944  61 s      66 cm
+    - Fourth trial: 1684235101  255 s     71 cm
+
+clear ts:
+    - First trial:  1684235788  103 s     80 cm
+    - Second trial: 1684235899  129 s     80 cm
+    - Third trial:  1684236034  301 s     80 cm
+    - Fourth trial: 1684236356  197 s     80 cm 
+
+
+------------ goeref test ---------------
+
+geo 1 - 1684077694 24 s
+geo 2 - 1684078386 11 s
+geo 3 - 1684078960  26 s
+
+--------------- old -------------------
+
+#(for full trash test1675168544) 1675168352
+#1675168055 #- corner  1675168005-wall? 
+

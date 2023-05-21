@@ -28,8 +28,8 @@ ax1.set_title('Lidar data')
 ax1.set_xlim([-10, 10])
 ax1.set_ylim([-10, 10])
 ax2.set_title('NED track')
-ax2.set_xlim([-10, 1])
-ax2.set_ylim([-10, 10])
+ax2.set_xlim([-15, 15])
+ax2.set_ylim([-15, 15])
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax3.set_title('Current camera frame')
@@ -120,6 +120,6 @@ def animate(animation_data):
     ani = FuncAnimation(fig, update, frames = animation_data, blit = True, interval = 100, repeat = True, save_count=5000)
     writervideo = FFMpegWriter(fps=25) 
 
-    ani.save('georeftest2.mp4', writervideo)
+    ani.save('./animations/jpda_test_plots/bottle1.mp4', writervideo)
     
     #plt.show()

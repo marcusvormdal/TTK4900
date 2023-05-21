@@ -17,15 +17,15 @@ def get_camera_frame(video, start_stamp, video_path = None, ros = False):
         for topic, msg, t in video.read_messages(topics=['/camera/image_raw/compressed']):
             t = t.to_sec()
             cv_img = bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="passthrough")
-            cv2.imshow('img', cv_img)
-            cv2.waitKey(0)
+            #cv2.imshow('img', cv_img)
+            #cv2.waitKey(0)
             newcameramtx, roi = cv2.getOptimalNewCameraMatrix(intrinsic, test_dist, (2688,1520), 1, (2688,1520))
-            print(newcameramtx)
-            print(roi)
-            cv_img = cv2.undistort(cv_img, intrinsic, test_dist, None, newcameramtx)
-            cv_img = cv2.UMat.get(cv_img)
-            cv2.imshow('img', cv_img)
-            cv2.waitKey(0)
+            #print(newcameramtx)
+            #print(roi)
+            #cv_img = cv2.undistort(cv_img, intrinsic, test_dist, None, newcameramtx)
+            #cv_img = cv2.UMat.get(cv_img)
+            #cv2.imshow('img', cv_img)
+            #cv2.waitKey(0)
             if start_stamp > t:
                 continue
             yield [t,cv_img]
@@ -51,9 +51,8 @@ def get_camera_frame(video, start_stamp, video_path = None, ros = False):
             yield [stamp, img]
 
 def detect_trash(image, model, rot):
-    #image_res = cv2.resize(image, (672, 380))
-
-    predictions = model(image)
+    image_res = cv2.resize(image, (672, 380))
+    predictions = model(image_res)
     boxes = []
     detections = []
     world_coords = []
@@ -70,10 +69,9 @@ def detect_trash(image, model, rot):
             boxes.append(box)
     for b in boxes:
         R = rotation_matrix(np.radians(-90.0+rot[0]), rot[1], np.radians(90.0+rot[2]))
-        world_coord = alternate_world_coord(b[1],b[2], R, [0.0,0.0,0.50])
+        world_coord = georeference(b[1],b[2], R, [0.0,0.0,0.50])
         if world_coord[0] < 8.0:
             world_coords.append(world_coord)
-        
     return [detections, world_coords, boxes]
 
 
@@ -84,8 +82,7 @@ def calculate_angle(ymax, xmin, xmax):
     #print(box_data)
     return box_data
 
-
-def alternate_world_coord(u,v, R, t_wc):
+def georeference(u,v, R, t_wc):
     theta = ((u - 1344) / 2688)*np.radians(109)
     psi =  ((v - 760) / 1520)*np.radians(60)
     v_c = [np.tan(theta), np.tan(psi), 1]

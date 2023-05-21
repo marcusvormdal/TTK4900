@@ -11,8 +11,6 @@ from stonesoup.models.measurement.linear import LinearGaussian
 import plotly
 from io import BytesIO
 import base64
-import pymap3d
-
 import lidar_driver.lidar_driver as ld
 import camera_driver.camera_driver as cd
 import jpda_driver.jpda_driver as jd
@@ -21,17 +19,13 @@ import plot_driver.plot_driver as pd
 import copy
 import warnings
 import rosbag
-warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) # This is a band-aid solution
+warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) # Removing internal opencv error
 
 def run(start_stamp, runtime, ros = True, relative_pos = True):
-    # Control variables
-    use_capture = True
-    #1675168055 #- corner  1675168005-wall?  #  -
-    
-    #3615 for trash bag
-
+    use_capture = True    
     video_path = '../data/lidar_collection_31_01/videos/full_run.mp4'
-    bag = rosbag.Bag('./bags/georef_test2.bag', "r")
+    bag = rosbag.Bag('./bags/bottle_01.bag', "r")
+    
     #global variables
     ts = start_stamp
     lidar_measurements = []
@@ -45,7 +39,7 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
     ned_track = []
     lidar_buffer = []
     buffer_index = 0
-    
+    curr_track = [[0,0],[0,0]]
     # Initiate LSD
     detector = cv2.createLineSegmentDetector(0)
 
@@ -63,7 +57,6 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
         gps_date = sf.get_gps_date_ts(pos_stream)  # Need to resolve once
 
         # cast generators
-        
         if ros == True:
             lidar_generator = ld.get_raw_lidar_data(bag, start_stamp, ros)
             camera_generator = cd.get_camera_frame(bag, start_stamp, ros=True) 
@@ -75,6 +68,7 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
 
         # Initialize data frames
         curr_lidar = next(lidar_generator)
+        print("get ts:", curr_lidar)
         curr_cam = next(camera_generator)
         curr_pos = next(pos_generator)
         
@@ -87,15 +81,13 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
         t1_start = process_time() 
         tracker_data = set()
         data_type, ts, data, curr_lidar, curr_cam, curr_pos = sf.data_handler(curr_lidar, curr_cam, curr_pos, lidar_generator, camera_generator, pos_generator)
-        print("data_type",data_type)
+        
         if data_type == 'lid':
             lidar_measurements, current_lines, thresholded_raw = ld.get_lidar_measurements(detector, data, position_delta = position_delta, radius = 10, intensity=0, heigth=-0.80, current_lines=current_lines)         # All lidar points on the water surface, bounds for plotting
-            print("lid", lidar_measurements)
             if np.size(current_lines) != 0:
                 current_lines[:,1] = sf.get_relative_pos(current_lines[:,1], 'line')
                 current_lines[:,1] = ld.update_lines_pos(0, current_lines[:,1])
-            lm_plot = lidar_measurements #ld.set_lidar_offset(0,copy.deepcopy(lidar_measurements))
-            #test = np.array([[10.0,5.0],[10.0,0.0]])
+            lm_plot = lidar_measurements
             data = ld.set_lidar_offset(+last_position[2], copy.deepcopy(lidar_measurements), t = [0.0+last_position[0],-0.27+last_position[1]])
             if np.size(data) != 0:
                 for meas in data:
@@ -105,7 +97,7 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
                 clustered = ld.cluster_measurements(lidar_buffer)
                 for c in clustered:
                     ned_track.append([c, 'lid'])
-                    tracker_data.add(Detection(state_vector =StateVector([c[1],c[0]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_cam))
+                    tracker_data.add(Detection(state_vector =StateVector([c[1],c[0]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_lid))
 
                 lidar_buffer = []
                 buffer_index = 0
@@ -123,19 +115,17 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
             if np.size(data) != 0:
                 for meas in data:
                     ned_track.append([meas,'cam'])
-                    tracker_data.add(Detection(state_vector = StateVector([meas[1],meas[0]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_lid))
+                    tracker_data.add(Detection(state_vector = StateVector([meas[1],meas[0]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_cam))
 
         elif data_type == 'pos':
             position_delta = np.array(data) - np.array(last_position)
             last_position = data
-            #print("current pos", last_position[2])
             track.append(last_position)
             curr_track = np.copy(track)
             continue
         t1_stop = process_time()
         
         print(data_type, ' : ', t1_stop-t1_start, ' : ', ts)
-        print(data)
         plot_data = [data_type, thresholded_raw, lm_plot,current_lines, detections, curr_track, curr_cam[1], np.copy(ned_track)]
         
         yield ts, tracker_data, data_type, plot_data
@@ -145,16 +135,20 @@ def detector_wrapper(gen):
         yield datetime.fromtimestamp(ts), tracker_data
         
 def main():
-    start_stamp = 1684077700 #(for full trash test1675168544) 1675168352
+
+    start_stamp =1684231911  
     runtime = start_stamp + int(input("Runtime (s): "))
+    gt =  '../data/test_marcus/gnns_data/bottles.gpx'
     animation_data = []
-    jpda = True
+    jpda = False
     tracks = set()
+    
     if jpda == False:
-        runner = run(start_stamp, runtime)
+        runner = run(start_stamp, runtime, ros = True, relative_pos = True)
         for ts, data, data_type, plot_data in runner:
-                animation_data.append(plot_data)
+                #animation_data.append(plot_data)
         pd.animate(animation_data)     
+        
     else:
         runner = run(start_stamp, runtime, relative_pos = False)
         gen = detector_wrapper(runner)
@@ -169,11 +163,10 @@ def main():
             pil_img.save(stream, format="png")
             base64_string = prefix + base64.b64encode(stream.getvalue()).decode("utf-8")
             
-        #ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
-        #print("dist", pymap3d.geodetic2ned(63.4401734* (np.pi/180), 10.3995373* (np.pi/180), 0, 63.4392986* (np.pi/180), 	10.4013141* (np.pi/180), 0, ell=ell_grs80, deg=False))
-        #print(tracker.tracks)
+        NIS, NEES, RMSE = sf.NIS_NEES_RMSE(tracker, gt)
+                    
         plotter.plot_tracks(tracks, [0, 2], uncertainty=True)
-        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.1667, dy = 0.1667)]) #0.1667 is standard  #tuned dx = 0.1615, dy = 0.1760
+        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.1615, dy = 0.1760)]) 
         plotter.fig["layout"]["yaxis"]["autorange"]=False
         plotter.fig.show()
 

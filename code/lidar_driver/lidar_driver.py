@@ -3,10 +3,7 @@ import velodyne_decoder as vd
 import cv2
 from PIL import Image as im
 from support_functions.support_functions import get_image_pos, rotation_matrix
-from queue import PriorityQueue
-import pybst
 from sklearn.cluster import KMeans, MeanShift
-#import rosbag
 
 def read_pcap_data(filepath):
     config = vd.Config(model='VLP-16', rpm=600)
@@ -18,15 +15,27 @@ def read_pcap_data(filepath):
     return
 
 def get_raw_lidar_data(raw_lidar_data, start_stamp, ros = False):
-    
+    config = vd.Config(model='VLP-16', rpm=600)            
+    if ros == True:
+        for stamp, points, topic in vd.read_bag(raw_lidar_data, config, ['/velodyne_packets']):
+            stamp = stamp.to_sec()
+            if start_stamp > stamp:
+                continue
+            yield [stamp, points]
+    else:
+        for stamp, points in vd.read_pcap(raw_lidar_data, config):
+            if start_stamp > stamp:
+                continue
+            yield [stamp, points]
+        
+        
+def getalt_raw_lidar_data(raw_lidar_data, start_stamp, ros = False):
     if ros == True:
         config = vd.Config(model='VLP-16', rpm=600)            
         for stamp, points, topic in vd.read_bag(raw_lidar_data, config, ['/velodyne_packets']):
             stamp = stamp.to_sec()
             if start_stamp > stamp:
-                print(stamp)
                 continue
-            
             yield [stamp, points]
     else:
         for frame in raw_lidar_data:

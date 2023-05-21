@@ -22,8 +22,6 @@ from stonesoup.deleter.multi import CompositeDeleter
 
 transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(0.001),
                                                           ConstantVelocity(0.001)])
-print(transition_model)
-
 measurement_model = LinearGaussian(
     ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.1**2, 0.1**2]))
 

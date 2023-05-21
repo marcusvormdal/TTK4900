@@ -1,7 +1,9 @@
 import numpy as np
 import pymap3d
 from datetime import datetime, timedelta
-#import rosbag
+
+import gpxpy
+import gpxpy.gpx
 
 def get_relative_pos(object, obj_t = 'point'):
     if obj_t == 'point':
@@ -47,33 +49,30 @@ def get_position(data_stream, start_stamp, relative_pos, date = None, ros = Fals
     set_start_pos = False
     heading = 0
     if ros == True:
-        t = 1684077694
-        for i in range(10000):
-            
-            yield [t, [0,0,0]]
-            t +=1
-            
-        for topic, msg, t in data_stream.read_messages(topics=['/GPS_publisher']):
-            t = t.to_sec()
-            if start_stamp > t:
-                        continue
-            if set_start_pos == False:
-                if relative_pos == True:
-                    start_pos= [float(lat), float(lon)]
-                else:
-                    start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]
-                set_start_pos = True
-            ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
-            ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
-            
-            print("HEADING", heading)
-            yield [t, [ned[0], ned[1], heading]]
+        if relative_pos == True:
+            t = start_stamp
+            for i in range(1000):
+                t +=1
+                yield [t, [0,0,227]]
+                
+        else:
             #for final test
-            
-            #yield [t, [ned[0], ned[1], heading]]
-            
-        
-        
+            for topic, msg, t in data_stream.read_messages(topics=['/velodyne_packets']):
+                t = t.to_sec()
+                if start_stamp > t:
+                            continue
+                
+                if set_start_pos == False:
+                    start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]
+                    set_start_pos = True
+                    
+                lat = 63.440001* (np.pi/180)
+                lon = 10.399845* (np.pi/180) 
+                
+                ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
+                ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
+                
+                yield [t, [ned[0], ned[1], 227]]
             
     else:
         file = open(data_stream, 'r')
@@ -101,23 +100,14 @@ def get_position(data_stream, start_stamp, relative_pos, date = None, ros = Fals
                     if relative_pos == True:
                         start_pos= [float(lat), float(lon)]
                     else:
-                        start_pos_old= [63.43802* (np.pi/180), 10.398208* (np.pi/180)] #pytold 
-                        start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]
+                        start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]  #brattør_farge 
                     set_start_pos = True
                 ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
                 ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
                 yield [timestamp, [ned[0], ned[1], heading]]
             
 
-def rtk_correct(rtk_file, coordinate):
-    
-    corrected_coordinate = None
-    return corrected_coordinate
-
 def data_handler(curr_lidar, curr_cam, curr_pos, gen_lidar, gen_cam, gen_pos):
-    #print('Lidar_t', curr_lidar[0])
-    #print('Camera_t', curr_cam[0])
-    #print('Position_t', curr_pos[0])
     data_type = ''
     data = None
     if curr_lidar[0] < curr_cam[0] and curr_lidar[0] < curr_pos[0]:
@@ -153,3 +143,97 @@ def rotation_matrix(psi, theta, phi):
     
     return R
 
+def NIS_NEES_RMSE(tracker, gt):
+    track_NIS = []
+    track_NEES = []
+    track_RMSE = []
+    
+    for track in tracker.tracks:
+        start_ts = datetime.timestamp(track[0]._property_timestamp)
+        gt_gen = gt_generator(gt, start_ts)
+        ned_gt = next(gt_gen)
+        print('--------------- NEW TRACK ---------------')
+        print(start_ts, ned_gt)
+        NIS = []
+        NEES = []
+        RMSE = []
+        for meas in track:
+            
+            ts = datetime.timestamp(meas._property_timestamp)
+
+            
+            #NEES extraction
+            x_hat = meas._property_state_vector
+            P = meas._property_covar
+            P_pos = np.array([[P[0,0],P[0,3]],[P[3,0], P [3,3]]])
+            
+            if ts + 0.2 >= ned_gt[0] >= ts -0.2:
+                x_err = np.array([x_hat[0], x_hat[2]]).T-np.array(ned_gt[1]).T
+                print(x_err)
+                NEES.append(get_NEES(x_err, P_pos))
+                RMSE.append(get_RMSE(x_err))
+                
+                ned_gt = next(gt_gen)
+            elif ned_gt[0] < ts - 0.5:
+                ned_gt = next(gt_gen)
+            
+            #NIS extraction
+            try:
+                if meas._property_hypothesis._property_measurement_prediction != None:
+                    y = meas._property_hypothesis._property_measurement._property_state_vector
+                    y_hat = meas._property_hypothesis._property_measurement_prediction._property_state_vector
+                    S = meas._property_hypothesis._property_measurement_prediction._property_covar
+                    NIS.append([ts, get_NIS(y, y_hat, S)])
+            except Exception as E:  
+                try:
+                    if meas._property_hypothesis._property_single_hypotheses != None:
+                        for hyp in meas._property_hypothesis._property_single_hypotheses:
+                            if hyp._property_probability >= 0.95:                            
+                                y = hyp._property_measurement._property_state_vector
+                                y_hat = hyp._property_measurement_prediction._property_state_vector
+                                S = hyp._property_measurement_prediction._property_covar
+                                NIS.append([ts, get_NIS(y, y_hat, S)])
+                                
+                except Exception as E:  
+                    pass
+        track_NIS.append(NIS)
+        track_NEES.append(NEES)
+        track_RMSE.append(RMSE)
+        
+    print("NIS",track_NIS)
+    print("NEES",track_NEES)
+    print("RMSE",track_RMSE)
+    return track_NIS, track_NEES, track_RMSE
+
+def get_NIS(meas, pred_meas, meas_cov):
+    NIS = (pred_meas - meas).T @ np.linalg.inv(meas_cov) @ (pred_meas - meas)
+    return NIS[0]
+
+def get_RMSE(error):
+
+     return np.sqrt(np.mean((error)**2))
+
+def get_NEES(error, P_k):
+    P_k_inv = np.linalg.inv(P_k)
+    NEES =  np.sum(error.T @ P_k_inv @ error)
+    return NEES
+
+def gt_generator(gpx, start_stamp):
+    gpx_file = open(gpx, 'r')
+    gpx = gpxpy.parse(gpx_file)
+    ned_old = []
+    for track in gpx.tracks:
+        for segment in track.segments:
+            for point in segment.points:
+                timestamp = datetime.timestamp(point.time )
+                start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]  #brattør_farge 
+                ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
+                ned = pymap3d.geodetic2ned(point.latitude* (np.pi/180), point.longitude* (np.pi/180), 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
+                if start_stamp > timestamp:
+                   ned_old = ned
+                   continue
+               
+                if ned[1] == ned_old[1] and ned[0] == ned_old[0]: # No new measurement
+                    continue
+                ned_old = ned
+                yield [timestamp, [ned[1], ned[0]]]
