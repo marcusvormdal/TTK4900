@@ -156,7 +156,7 @@ def main():
             tracks.update(ctracks)
         plotter = Plotterly()
 
-        pil_img = Image.open("brattor_farge.png").transpose(Image.FLIP_TOP_BOTTOM )
+        pil_img = Image.open("brattor_farge_korrekt.png").transpose(Image.FLIP_TOP_BOTTOM )
         prefix = "data:image/png;base64,"
         with BytesIO() as stream:
             pil_img.save(stream, format="png")
@@ -172,7 +172,7 @@ def main():
         
         
         plotter.plot_tracks(tracks, [0, 2], uncertainty=True)
-        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.1615, dy = 0.1760)]) 
+        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.267, dy = 0.267)]) 
         plotter.fig["layout"]["yaxis"]["autorange"]=False
         plotter.fig.show()
 
