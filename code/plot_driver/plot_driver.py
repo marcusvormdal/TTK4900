@@ -11,32 +11,34 @@ from scipy.stats import chi2
 
 x, y, c = np.random.random((3, 10))
 a=np.random.random((1080, 1920))
-gs = gridspec.GridSpec(2, 2)
+gs = gridspec.GridSpec(6, 2)
 fig = plt.figure()
 ax1 = fig.add_subplot(gs[0, 0]) # row 0, col 0
-ax2 = fig.add_subplot(gs[0, 1]) 
-ax3 = fig.add_subplot(gs[1, :])
+ax2 = fig.add_subplot(gs[2:6, :]) 
+ax3 = fig.add_subplot(gs[0, 1])
 ln1_1 = ax1.add_collection(LineCollection([], lw=2))
 ln1_2 = ax1.scatter(x, y, marker='o', color='blue', linewidths=1)
-ln2, = ax2.plot([], [], color='green', marker='o', linestyle='dashed', linewidth=0.5, markersize=0.5)
+ln2, = ax2.plot([], [], color='green', marker='o', linestyle='dashed', linewidth=0.5, markersize=2.5)
 ln2_2 = ax2.scatter(100, 100, marker='x', color='red', linewidths=1)
 ln2_3 = ax2.scatter(100, 100, marker='+', color='blue', linewidths=1)
 
 ln3 = ax3.imshow(a)
 
-ax1.set_xlabel('Y axis')
-ax1.set_ylabel('X axis')
+ax1.set_xlabel('Y axis (m)')
+ax1.set_ylabel('X axis (m)')
 ax1.set_title('Lidar data')
 ax1.set_xlim([-10, 10])
 ax1.set_ylim([-10, 10])
-ax2.set_title('NED track')
-ax2.set_xlim([-15, 15])
-ax2.set_ylim([-15, 15])
-ax2.set_xlabel('X')
-ax2.set_ylabel('Y')
-ax3.set_title('Current camera frame')
+ax2.set_title('NED')
+ax2.set_xlim([-15, 7.5])
+ax2.set_ylim([-15, 10])
+ax2.legend(["USV", 'Camera', 'LiDAR'])
+ax2.set_xlabel('X (m)')
+ax2.set_ylabel('Y (m)')
+#ax3.set_title('Current camera frame')
     
 def update(frame):
+    
     data_type, raw_lidar_data, lidar_measurements, lidar_bounds, detections, pos_track, camera_frame, ned_track = frame
                  
     if data_type == 'lid':
@@ -122,9 +124,13 @@ def plot_lsd(ax, detector, lidar_bounds):
 def animate(animation_data):
 
     ani = FuncAnimation(fig, update, frames = animation_data, blit = True, interval = 100, repeat = True, save_count=5000)
-    writervideo = FFMpegWriter(fps=25) 
-
-    ani.save('./animations/jpda_test_plots/bottle1.mp4', writervideo)
+    writervideo = FFMpegWriter(fps=10) 
+    plt.show()
+    plt.pause(0)
+    name = input("run name: ")
+    run_name = './animations/jpda_test_plots/'+  name  +'.mp4'
+    print(run_name)
+    ani.save(run_name, writervideo,  dpi=200)
     
     #plt.show()
 
@@ -146,6 +152,7 @@ def plot_nis(times, NIS_xy, track, confidence=0.90):
     ax.plot(times, NIS_xy, label=fr"$NIS_{{{'xy'}}}$")
     ax.hlines([ci_lower, ci_upper], min(times), max(times), 'C3', ":",
                     label=f"{confidence:2.1%} conf")
+    print("CI --------------- ",ci_lower, ci_upper)
     ax.set_title(
         f"NIS ${{{'xy'}}}$ "
         f"({frac_inside:2.1%} inside, {frac_below:2.1%} below, "

@@ -21,7 +21,7 @@ from stonesoup.deleter.error import CovarianceBasedDeleter
 from stonesoup.deleter.multi import CompositeDeleter
 
 transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(0.001),
-                                                          ConstantVelocity(0.001)])
+                                                          ConstantVelocity(0.001)]) #0.001 for static trash
 measurement_model = LinearGaussian(
     ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.1**2, 0.1**2]))
 
@@ -37,8 +37,8 @@ data_associator = JPDA(hypothesiser=hypothesiser)
 
 deleter_init = UpdateTimeStepsDeleter(time_steps_since_update=3)
 
-deleter_2 = UpdateTimeStepsDeleter(time_steps_since_update=100)
-deleter = CovarianceBasedDeleter(covar_trace_thresh=1)
+deleter_2 = UpdateTimeStepsDeleter(time_steps_since_update=35)
+deleter = CovarianceBasedDeleter(covar_trace_thresh=1.5)
 multi_deleter = CompositeDeleter([deleter, deleter_2], intersect = False)
 
 init_hypothesiser = DistanceHypothesiser(predictor, updater, measure=Mahalanobis(), missed_distance=0.3)

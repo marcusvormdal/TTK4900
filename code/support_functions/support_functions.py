@@ -66,12 +66,11 @@ def get_position(data_stream, start_stamp, relative_pos, date = None, ros = Fals
                     start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]
                     set_start_pos = True
                     
-                lat = 63.4399955309375* (np.pi/180)
-                lon = 10.3998270490625* (np.pi/180) 
+                lat =  63.43998448192789* (np.pi/180)               
+                lon =  10.399792069583912* (np.pi/180) 
                 
                 ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
                 ned = pymap3d.geodetic2ned(lat, lon, 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
-                
                 yield [t, [ned[0], ned[1], 227]]
             
     else:
@@ -143,94 +142,178 @@ def rotation_matrix(psi, theta, phi):
     
     return R
 
+
+def RMSE(sensor_measurements, gt):
+    print(sensor_measurements)
+    start_ts = sensor_measurements[0][2]
+    #print("start ts", start_ts)
+    gt_gen = gt_generator(gt, start_ts)
+    ned_gt = next(gt_gen)
+    lid_error = []
+    cam_error = []  
+    for meas in sensor_measurements:
+        print('--------------- meas ---------------')
+        print(start_ts, ned_gt)
+          
+        ts = meas[2]
+        print("meas ts", meas)
+        print("gt", ned_gt)
+        if (ts + 0.2 >= ned_gt[0]) and (ned_gt[0] >= ts -0.2):
+            x_err = np.array([meas[0][1], meas[0][0]]).T-np.array(ned_gt[1]).T
+            print("Err",x_err)
+            if abs(x_err[0]) > 3 or abs(x_err[1]) > 3:
+                pass
+            else:
+                if meas[1] == 'lid':
+                    print("lid MEAS error:", x_err)
+                    print(ts, ned_gt)
+                    lid_error.append(x_err)
+                elif meas[1] == 'cam':
+                    print("cam MEAS error:", x_err)
+                    print(ts, ned_gt)
+                    print(x_err)
+                    cam_error.append(x_err)
+                
+        elif ned_gt[0] < ts - 1.0:
+            ned_gt = next(gt_gen)
+            
+        
+    RMSE_lid = get_RMSE(np.array(lid_error))
+    RMSE_cam = get_RMSE(np.array(cam_error))
+    return RMSE_lid, RMSE_cam
+
+
 def NIS_NEES_RMSE(tracker, gt):
     track_NIS = []
     track_NEES = []
     track_RMSE = []
     
-    for track in tracker.tracks:
-        start_ts = datetime.timestamp(track[0]._property_timestamp)
-        gt_gen = gt_generator(gt, start_ts)
-        ned_gt = next(gt_gen)
-        print('--------------- NEW TRACK ---------------')
-        print(start_ts, ned_gt)
-        NIS = []
-        NEES = []
-        RMSE = []
-        track_error = []
-        for meas in track:
-            
-            ts = datetime.timestamp(meas._property_timestamp)
-
-            
-            #NEES extraction
-            x_hat = meas._property_state_vector
-            P = meas._property_covar
-            P_pos = np.array([[P[0,0],P[0,3]],[P[3,0], P [3,3]]])
-            
-            if ts + 0.2 >= ned_gt[0] >= ts -0.2:
-                x_err = np.array([x_hat[0], x_hat[2]]).T-np.array(ned_gt[1]).T
-                print(x_err)
+    for track in tracker:
+        print("HERE -------------------------")
+        try:
+            start_ts = datetime.timestamp(track[0]._property_timestamp)
+            ts = None
+            gt_gen = gt_generator(gt, start_ts)
+            ned_gt = next(gt_gen)
+            print('--------------- NEW TRACK ---------------')
+            print("start time : ", start_ts, ned_gt)
+            NIS = []
+            NEES = []
+            RMSE = []
+            track_error = []
+            for meas in track:
                 
-                NEES.append(get_NEES(x_err, P_pos))
-                track_error.append(x_err)
-                
-                ned_gt = next(gt_gen)
-            elif ned_gt[0] < ts - 0.5:
-                ned_gt = next(gt_gen)
-            
-            #NIS extraction
-            try:
-                if meas._property_hypothesis._property_measurement_prediction != None:
-                    y = meas._property_hypothesis._property_measurement._property_state_vector
-                    y_hat = meas._property_hypothesis._property_measurement_prediction._property_state_vector
-                    S = meas._property_hypothesis._property_measurement_prediction._property_covar
-                    NIS.append([ts, get_NIS(y, y_hat, S)])
-            except Exception as E:  
+                ts = datetime.timestamp(meas._property_timestamp)
+                #print("curr ts", ts)
                 try:
-                    if meas._property_hypothesis._property_single_hypotheses != None:
-                        for hyp in meas._property_hypothesis._property_single_hypotheses:
-                            if hyp._property_probability >= 0.95:                            
-                                y = hyp._property_measurement._property_state_vector
-                                y_hat = hyp._property_measurement_prediction._property_state_vector
-                                S = hyp._property_measurement_prediction._property_covar
-                                NIS.append([ts, get_NIS(y, y_hat, S)])
-                                
-                except Exception as E:  
+                    #NEES extraction
+                    #print("nedgt", ned_gt)
+                    x_hat = meas._property_state_vector
+                    #print("xhat",x_hat)
+                    P = meas._property_covar
+                    P_pos = np.array([[P[0,0],P[0,3]],[P[3,0], P [3,3]]])
+                    if (ts + 0.2 >= ned_gt[0]) and (ned_gt[0] >= ts -0.2):
+                        x_err = np.array([x_hat[0], x_hat[2]]).T-np.array(ned_gt[1]).T
+                        #print("err", x_err)
+                        if abs(x_err[0]) > 3 or abs(x_err[1]) > 3:
+                            pass
+                        else:
+                            NEES.append([ts, get_NEES(x_err, P_pos)])
+                            track_error.append(x_err)
+                            #print("current track error", track_error)
+
+                    elif ned_gt[0] < ts - 1.0:
+                        
+                        ned_gt = next(gt_gen)
+
+                except Exception as E:
+                    #print(E)
                     pass
+                #NIS extraction
+                try:
+
+                    if meas._property_hypothesis._property_measurement_prediction != None:
+                        y = meas._property_hypothesis._property_measurement._property_state_vector
+                        y_hat = meas._property_hypothesis._property_measurement_prediction._property_state_vector
+                        S = meas._property_hypothesis._property_measurement_prediction._property_covar
+                        NIS.append([ts, get_NIS(y, y_hat, S)])
+                except Exception as E:  
+                    try:
+                        if meas._property_hypothesis._property_single_hypotheses != None:
+                            for hyp in meas._property_hypothesis._property_single_hypotheses:
+                                if hyp._property_probability >= 0.75:                            
+                                    y = hyp._property_measurement._property_state_vector
+                                    y_hat = hyp._property_measurement_prediction._property_state_vector
+                                    S = hyp._property_measurement_prediction._property_covar
+                                    NIS.append([ts, get_NIS(y, y_hat, S)])
+                                    
+                    except Exception as E:  
+                        #print(E)
+                        pass
+        except Exception as E:
+            #print(E)
+            pass             
+        print("------------- END track -------------")
+        print("end time: ", ts)
+        print("Track time",ts-start_ts)
         track_NIS.append(NIS)
         track_NEES.append(NEES)
         RMSE = get_RMSE(np.array(track_error))
         track_RMSE.append(RMSE)
     
     
-    print("NIS",track_NIS)
-    print("NEES",track_NEES)
-    print("RMSE",track_RMSE)
+    #print("NIS",track_NIS)
+    #print("NEES",track_NEES)
+    #print("RMSE",track_RMSE)
+    
+    try:
+        for i, track in enumerate(track_NIS):
+            print("ANIS track" + str(i) + " : ",np.mean(np.array(track)[:,1]))
+    except:
+        pass
+    
+    try:
+        for i, track in enumerate(track_NEES):
+            print("ANEES track" + str(i) + " : ",np.mean(np.array(track)[:,1]))
+    except:
+        pass
+    
     return track_NIS, track_NEES, track_RMSE
 
 def get_NIS(meas, pred_meas, meas_cov):
     NIS = (pred_meas - meas).T @ np.linalg.inv(meas_cov) @ (pred_meas - meas)
+    print("what", NIS)
     return NIS[0]
 
 def get_RMSE(error):
-
-     return np.sqrt(np.mean((error)**2))
+    print("RMSE feed", error)
+    print("mean", np.mean((error)))
+    return np.sqrt(np.mean((error**2)))
 
 def get_NEES(error, P_k):
+    print("NEEs")
+    print(error)
+    print(P_k)
     P_k_inv = np.linalg.inv(P_k)
+    print(P_k_inv)
+
     NEES =  np.sum(error.T @ P_k_inv @ error)
+    print("what2", NEES)
+
     return NEES
 
 def gt_generator(gpx, start_stamp):
     gpx_file = open(gpx, 'r')
     gpx = gpxpy.parse(gpx_file)
     ned_old = []
+    timestamp = 0
     for track in gpx.tracks:
         for segment in track.segments:
             for point in segment.points:
                 timestamp = datetime.timestamp(point.time ) 
-                start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]  #brattør_farge 
+                #start_pos = [ 63.43998448192789* (np.pi/180), 10.399792069583912* (np.pi/180)]  #brattør_farge for jpda
+                start_pos = [ 63.43998448192789* (np.pi/180),10.399792069583912* (np.pi/180) ]   # For single sensor
+                #start_pos = [ 63.4399867960294* (np.pi/180),  10.399749464852942* (np.pi/180) ] # box
                 ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
                 ned = pymap3d.geodetic2ned(point.latitude* (np.pi/180), point.longitude* (np.pi/180), 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
                 if start_stamp > timestamp:
@@ -241,3 +324,5 @@ def gt_generator(gpx, start_stamp):
                     continue
                 ned_old = ned
                 yield [timestamp, [ned[1], ned[0]]]
+                
+    yield [timestamp*3, [0, 0]]

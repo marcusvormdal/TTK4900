@@ -11,24 +11,23 @@ def get_camera_frame(video, start_stamp, video_path = None, ros = False):
     intrinsic = cv2.UMat(np.array([[2.75344274e+03, 0.00000000e+00, 1.34664016e+03],[0.00000000e+00, 2.77845260e+03, 7.48362894e+02], 
                                    [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])) 
     distortion = cv2.UMat(np.array([[-0.94911185,  2.27298045 , 0.02827832 ,-0.00913316 ,-3.70567064]]))
-    test_dist = cv2.UMat(np.array([[-0.94911185,  0.927298045 , 0.02827832 ,0 ,0]]))
+    
     if ros == True:
-        
+        t = 0
         for topic, msg, t in video.read_messages(topics=['/camera/image_raw/compressed']):
             t = t.to_sec()
             cv_img = bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="passthrough")
-            #cv2.imshow('img', cv_img)
-            #cv2.waitKey(0)
-            newcameramtx, roi = cv2.getOptimalNewCameraMatrix(intrinsic, test_dist, (2688,1520), 1, (2688,1520))
-            #print(newcameramtx)
-            #print(roi)
-            #cv_img = cv2.undistort(cv_img, intrinsic, test_dist, None, newcameramtx)
-            #cv_img = cv2.UMat.get(cv_img)
-            #cv2.imshow('img', cv_img)
-            #cv2.waitKey(0)
+            cv_img = cv2.undistort(cv_img, intrinsic, distortion, None, None)
+            cv_img = cv2.UMat.get(cv_img)
             if start_stamp > t:
                 continue
+            t = t-25
+            #cv2.imshow('img', cv_img)
+            #cv2.waitKey(0)
             yield [t,cv_img]
+            
+        yield [t*4, None]  # If offset thorws off measurements
+        
     else:
         meta_data = ffmpeg.probe(video_path)
         end_time = datetime.fromisoformat(meta_data['format']['tags']['creation_time'][0:19])
@@ -69,8 +68,8 @@ def detect_trash(image, model, rot):
             boxes.append(box)
     for b in boxes:
         R = rotation_matrix(np.radians(-90.0+rot[0]), rot[1], np.radians(90.0+rot[2]))
-        world_coord = georeference(b[1],b[2], R, [0.0,0.0,0.50])
-        if world_coord[0] < 8.0:
+        world_coord = georeference(b[1],b[2], R, [0.0,0.0,0.90])
+        if world_coord[0] < 10.0:
             world_coords.append(world_coord)
     #Temp
     '''
@@ -97,7 +96,7 @@ def georeference(u,v, R, t_wc):
     theta = ((u - 1344) / 2688)*np.radians(109)
     psi =  ((v - 760) / 1520)*np.radians(60)
     v_c = [np.tan(theta), np.tan(psi), 1]
-    v_w = R@v_c + np.array([t_wc[0], t_wc[1], 0])
+    v_w =  rotation_matrix(0,0,np.radians(3)) @ R@v_c + np.array([t_wc[0], t_wc[1], 0])   # 
     s = -t_wc[2] / v_w[2]
     x_w = t_wc + s*v_w
     return x_w
