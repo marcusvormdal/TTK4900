@@ -74,8 +74,8 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
         
         #Track initialization 
         last_position = curr_pos[1]
-        measurement_model_cam = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.7**2, 0.7**2])) #0.2
-        measurement_model_lid = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.5**2, 0.5**2])) #0.1
+        measurement_model_cam = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.1**2, 0.1**2])) #0.2
+        measurement_model_lid = LinearGaussian(ndim_state=4, mapping=[0,2], noise_covar=np.diag([0.1**2, 0.1**2])) #0.1
     while(runtime > ts):
 
         t1_start = process_time() 
@@ -88,7 +88,7 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
                 current_lines[:,1] = sf.get_relative_pos(current_lines[:,1], 'line')
                 current_lines[:,1] = ld.update_lines_pos(0, current_lines[:,1])
             lm_plot = lidar_measurements
-            data = ld.set_lidar_offset(+last_position[2], copy.deepcopy(lidar_measurements), t = [0.0+last_position[0],-0.21+last_position[1]]) # -0.27 for old
+            data = ld.set_lidar_offset(+last_position[2], copy.deepcopy(lidar_measurements), t = [0.0+last_position[0], 0.0 +last_position[1]]) # -0.27 for old 021 new
             if np.size(data) != 0:
                 for meas in data:
                     lidar_buffer.append(meas)
@@ -110,8 +110,8 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
                 continue
             
         elif data_type == 'cam':
-            detections = cd.detect_trash(data, model, [0,0.0,0]) #-[5,0.0,-0.85] for 
-            data = cd.set_cam_offset(last_position[2], detections,[0.0+last_position[0],-0.45+last_position[1]]) # -0.04 for old
+            detections = cd.detect_trash(data, model, [1.5,0.0,-2.7]) 
+            data = cd.set_cam_offset(last_position[2], detections,[0.0+last_position[0],-0.00+last_position[1]]) # -0.04 for old 045 new
             if np.size(data) != 0:
                 for meas in data:
                     print(ts, "CAM DETECTION:", meas)
@@ -123,6 +123,8 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
             last_position = data
             track.append(last_position)
             curr_track = np.copy(track)
+            tracker_data.add(Detection(state_vector = StateVector([last_position[0],last_position[1]]), timestamp =datetime.fromtimestamp(ts), measurement_model = measurement_model_lid)) #for plotting of gnss
+
             continue
         t1_stop = process_time()
         
@@ -138,11 +140,11 @@ def detector_wrapper(gen):
         
 def main():
 
-    start_stamp = 1684235813  
+    start_stamp = 1675168544   
     runtime = start_stamp + int(input("Runtime (s): "))
     gt =  '../data/test_marcus/gnns_data/pbox.gpx'
     animation_data = []
-    jpda = False
+    jpda = True
     tracks = set()
     
 
@@ -158,7 +160,7 @@ def main():
         pd.animate(animation_data)     
         
     else:
-        runner = run(start_stamp, runtime, relative_pos = False)
+        runner = run(start_stamp, runtime, ros=False, relative_pos = False)
         gen = detector_wrapper(runner)
         tracker = jd.track(gen)
         for _, ctracks in tracker:
@@ -172,26 +174,26 @@ def main():
             base64_string = prefix + base64.b64encode(stream.getvalue()).decode("utf-8")
         
         
-        pil_img_usv = Image.open("usv.png").transpose(Image.FLIP_TOP_BOTTOM)
-        prefix = "data:image/png;base64,"
-        with BytesIO() as stream:
-            pil_img_usv.save(stream, format="png")
-            base64_string_usv = prefix + base64.b64encode(stream.getvalue()).decode("utf-8")
+        #pil_img_usv = Image.open("usv.png").transpose(Image.FLIP_TOP_BOTTOM)
+        #prefix = "data:image/png;base64,"
+        #with BytesIO() as stream:
+        #    pil_img_usv.save(stream, format="png")
+        #    base64_string_usv = prefix + base64.b64encode(stream.getvalue()).decode("utf-8")
             
-        pos = [ 63.43998448192789* (np.pi/180),   10.399792069583912* (np.pi/180) ]   # For single sensor
-        start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]  #brattør_farge 
-        ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
-        ned = pymap3d.geodetic2ned(pos[0], pos[1], 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
+        #pos = [ 63.43998448192789* (np.pi/180),   10.399792069583912* (np.pi/180) ]   # For single sensor
+        #start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]  #brattør_farge 
+        #ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
+        #ned = pymap3d.geodetic2ned(pos[0], pos[1], 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
     
 
-        test = plotly.graph_objects.Image(source=base64_string_usv, dx = 0.05, dy =0.05, x0 = ned[1]-1.35, y0 = ned[0]-1.4)
+        #test = plotly.graph_objects.Image(source=base64_string_usv, dx = 0.05, dy =0.05, x0 = ned[1]-1.35, y0 = ned[0]-1.4)
         
         plotter.plot_tracks(tracks, [0, 2], uncertainty=True)
-        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.267, dy = 0.267), test]) 
+        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.295, dy = 0.265)]) #0.267
         plotter.fig["layout"]["yaxis"]["autorange"]=False
         plotter.fig.show()
         
-        
+        '''
         print("TRACKS", tracks)
         NIS, NEES, RMSE = sf.NIS_NEES_RMSE(tracks, gt)
         print(np.shape(np.array(NIS)))
@@ -212,7 +214,7 @@ def main():
                 print(RM)
         except:
             pass 
-
+        '''
 
 main()  
     

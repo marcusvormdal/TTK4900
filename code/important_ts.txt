@@ -6,29 +6,29 @@
 ------------- JPDA test ------------ 
 bottle ts: at POS 1
 lat long: 
-    - First trial:  1684231911  47 s      84 cm    
-    - Second trial: 1684232105  51 s      87 cm
-    - Third trial:  1684232271  48 s      90 cm
-    - Fourth trial: 1684232663  63 s      94 cm
+    - First trial:  1684231911  47 s  (15)    84 cm         - first detection:  1684231921.6059098 CLUSTER: [    -6.5608      3.6638] last detection: 1684231948.640933 CLUSTER: [     3.1118     -9.0093] 
+    - Second trial: 1684232105  51 s  (19)    87 cm         - first detection:   [array([    -9.1825,       3.259], dtype=float32) 'lid' 1684232106.6842947]   last detection: [array([    -1.4126,      -8.108]) 'cam' 1684232132.512381]
+    - Third trial:  1684232271  48 s  (25)    90 cm         - first detection:  [array([    -9.4757,      1.5423], dtype=float32) 'lid' 1684232278.3494291]   last detection:  [array([    -4.3546,     -9.9767]) 'cam' 1684232309.1287873]
+    - Fourth trial: 1684232663  63 s  (13)    94 cm         - first detection:    last detection:
 
 
 bag ts: at POS 2
-    - First trial:  1684234623  54 s      56 cm 
-    - Second trial: 1684234773  57 s      61 cm
-    - Third trial:  1684234944  61 s      66 cm
-    - Fourth trial: 1684235101  255 s     71 cm
-
+    - First trial:  1684234633  44 s  (20)    56 cm         - first detection:    last detection: 
+    - Second trial: 1684234788  40 s   (26)   61 cm         - first detection:    last detection:
+    - Third trial:  1684234944  61 s      66 cm         - first detection:    last detection:
+    - Fourth trial: 1684235101  255 s     71 cm         - first detection:    last detection:
+    first 0 to 30? second 90 -out to 140
 clear ts:  at POS 2
-    - First trial:  1684235788  103 s     80 cm
-    - Second trial: 1684235899  129 s     80 cm
-    - Third trial:  1684236034  301 s     80 cm
-    - Fourth trial: 1684236356  197 s     80 cm 
+    - First trial:  1684235813  78 s   14  80 cm         - first detection:    last detection:
+    - Second trial: 1684235899  129 s   30  80 cm         - first detection:    last detection:
+    - Third trial:  1684236194  140 s   27  80 cm         - first detection:    last detection:
+    - Fourth trial: 1684236486  197 s     80 cm         - first detection:    last detection: 
 
 box ts: at POS 3
-    - First trial:  1684237154  150 s     56 cm 
-    - Second trial: 1684237532  153 s     69 cm
-    - Third trial:  1684237692  156 s     69 cm
-    - Fourth trial: 1684237855  89 s      69 cm
+    - First trial:  1684237200  70 s     56 cm         - first detection:    last detection: 
+    - Second trial: 1684237607  55 s     69 cm         - first detection:    last detection:
+    - Third trial:  1684237747  55 s     69 cm         - first detection:    last detection:
+    - Fourth trial: 1684237900  44 s      69 cm         - first detection:    last detection:
 
 ------------ goeref test ---------------
 
