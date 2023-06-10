@@ -1,4 +1,4 @@
-#USV trash detection and tracking using multimodal data fusion
+# USV trash detection and tracking using multimodal data fusion
 
 This repo is parts of the work done in the spring semester of 2023 for a M.sc. degree in cybernetics and robotics at NTNU.
 
