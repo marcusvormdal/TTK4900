@@ -23,13 +23,18 @@ def get_raw_lidar_data(raw_lidar_data, start_stamp, ros = False):
                 continue
             yield [stamp, points]
     else:
-        for stamp, points in vd.read_pcap(raw_lidar_data, config):
-            if start_stamp > stamp:
-                continue
-            yield [stamp, points]
+     for frame in raw_lidar_data:   #For pre-processed .pcap
+        if start_stamp > frame[0]:
+            continue
+        yield frame
+        
+        #for stamp, points in vd.read_pcap(raw_lidar_data, config):  #For raw .pcap
+        #    if start_stamp > stamp:
+        #        continue
+        #    yield [stamp, points]
         
         
-def getalt_raw_lidar_data(raw_lidar_data, start_stamp, ros = False):
+def get_raw_lidar_data(raw_lidar_data, start_stamp, ros = False):
     if ros == True:
         config = vd.Config(model='VLP-16', rpm=600)            
         for stamp, points, topic in vd.read_bag(raw_lidar_data, config, ['/velodyne_packets']):
@@ -222,14 +227,11 @@ def cluster_measurements(lidar_measurements):
     if np.size(lidar_measurements) == 0:
         return lidar_measurements
     meanshift = MeanShift(bandwidth=2, cluster_all = False).fit(np.array(lidar_measurements)[:,0:2])
-    #print("bef", np.array(lidar_measurements)[:,0:2])
     clustered_measurements = meanshift.cluster_centers_
     filtered_measurements = []
-    #print("aft", clustered_measurements)
     for l in np.unique(meanshift.labels_):
         num_measurements = np.count_nonzero((meanshift.labels_ == l).astype(int))
         if num_measurements > 15:
             filtered_measurements.append(clustered_measurements[l])
-    #print("filt", filtered_measurements)
 
     return filtered_measurements

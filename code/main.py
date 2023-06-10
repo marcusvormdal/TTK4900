@@ -52,8 +52,6 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
         raw_lidar_data = np.load('./lidar_driver/lidar_trash_point_array.npy', allow_pickle=True)
         video = cv2.VideoCapture(video_path)
         model = torch.hub.load('camera_driver/yolov7', 'custom', path_or_model = 'camera_driver/yolo7.pt', source='local')
-        #model = torch.hub.load('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolov7', 'custom', path_or_model = 'C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolo7.pt', source='local')
-        #model = torch.hub.load('C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolov7', 'custom', path ='C:/Users/mssvd/OneDrive/Skrivebord/TTK4900/code/camera_driver/yolo7_light.pt', source='local', force_reload=False)
         pos_stream = '../data/testrecord.txt'
         gps_date = sf.get_gps_date_ts(pos_stream)  # Need to resolve once
 
@@ -130,7 +128,7 @@ def run(start_stamp, runtime, ros = True, relative_pos = True):
         
         print(data_type, ' : ', t1_stop-t1_start, ' : ', ts)
         plot_data = [data_type, [], [], [], [], curr_track, [], np.copy(ned_track)]
-        #plot_data = [data_type, thresholded_raw, lm_plot,current_lines, detections, curr_track, curr_cam[1], np.copy(ned_track)]
+        #plot_data = [data_type, thresholded_raw, lm_plot,current_lines, detections, curr_track, curr_cam[1], np.copy(ned_track)] #For full plotting
         
         yield ts, tracker_data, data_type, plot_data
 
@@ -144,10 +142,9 @@ def main():
     runtime = start_stamp + int(input("Runtime (s): "))
     gt =  '../data/test_marcus/gnns_data/pbox.gpx'
     animation_data = []
-    jpda = True
+    jpda = True             # Feed to JPDA
     tracks = set()
     
-
     if jpda == False:
         runner = run(start_stamp, runtime, ros = True, relative_pos = True)
         final_plot_data = None
@@ -173,6 +170,12 @@ def main():
             pil_img.save(stream, format="png")
             base64_string = prefix + base64.b64encode(stream.getvalue()).decode("utf-8")
         
+        plotter.plot_tracks(tracks, [0, 2], uncertainty=True)
+        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.295, dy = 0.265)]) #0.267
+        plotter.fig["layout"]["yaxis"]["autorange"]=False
+        plotter.fig.show()
+        
+        ''' -------------------- Used for plotting of masters results -----------
         
         #pil_img_usv = Image.open("usv.png").transpose(Image.FLIP_TOP_BOTTOM)
         #prefix = "data:image/png;base64,"
@@ -184,16 +187,9 @@ def main():
         #start_pos = [63.4386345* (np.pi/180), 10.3985848* (np.pi/180)]  #brattør_farge 
         #ell_grs80 = pymap3d.Ellipsoid(semimajor_axis=6378137.0, semiminor_axis=6356752.31414036)
         #ned = pymap3d.geodetic2ned(pos[0], pos[1], 0, start_pos[0], start_pos[1], 0, ell=ell_grs80, deg=False)
-    
-
         #test = plotly.graph_objects.Image(source=base64_string_usv, dx = 0.05, dy =0.05, x0 = ned[1]-1.35, y0 = ned[0]-1.4)
         
-        plotter.plot_tracks(tracks, [0, 2], uncertainty=True)
-        plotter.fig.add_traces([plotly.graph_objects.Image(source=base64_string, dx = 0.295, dy = 0.265)]) #0.267
-        plotter.fig["layout"]["yaxis"]["autorange"]=False
-        plotter.fig.show()
         
-        '''
         print("TRACKS", tracks)
         NIS, NEES, RMSE = sf.NIS_NEES_RMSE(tracks, gt)
         print(np.shape(np.array(NIS)))

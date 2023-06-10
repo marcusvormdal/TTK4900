@@ -37,7 +37,7 @@ def get_camera_frame(video, start_stamp, video_path = None, ros = False):
         s = timedelta(seconds=(int(float(duration)%60)+3))
         start_time = end_time - m - s
         stamp = datetime.timestamp(start_time) - 0.25 
-        video_offset = int((start_stamp - stamp) * 4 - 6*4)-7
+        video_offset = int((start_stamp - stamp) * 4 - 6*4)+2
         stamp = stamp + int(start_stamp - stamp)
         video.set(cv2.CAP_PROP_POS_FRAMES, video_offset)
         success = True
@@ -68,8 +68,8 @@ def detect_trash(image, model, rot):
             boxes.append(box)
     for b in boxes:
         R = rotation_matrix(np.radians(-90.0+rot[0]), rot[1], np.radians(90.0+rot[2]))
-        world_coord = georeference(b[1],b[2], R, [0.0,0.0,0.90])
-        if world_coord[0] < 10.0:
+        world_coord = georeference(b[1],b[2], R, [0.0,0.0,0.99])
+        if world_coord[0] < 8.0:
             world_coords.append(world_coord)
     #Temp
     '''
@@ -96,7 +96,7 @@ def georeference(u,v, R, t_wc):
     theta = ((u - 1344) / 2688)*np.radians(109)
     psi =  ((v - 760) / 1520)*np.radians(60)
     v_c = [np.tan(theta), np.tan(psi), 1]
-    v_w =  rotation_matrix(0,0,np.radians(3)) @ R@v_c + np.array([t_wc[0], t_wc[1], 0])   # 
+    v_w =  rotation_matrix(0,0,np.radians(0)) @ R@v_c + np.array([t_wc[0], t_wc[1], 0])   # 
     s = -t_wc[2] / v_w[2]
     x_w = t_wc + s*v_w
     return x_w
